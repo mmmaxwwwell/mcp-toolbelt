@@ -1,23 +1,60 @@
 # mcp-toolbelt
 
-A Nix flake that bundles MCP servers useful to coding agents. Drop it into your
-project's `flake.nix`, toggle on the servers you want, and your devshell starts
-them automatically.
-
-Every server is itself a flake under [`servers/<name>/`](servers/), so you can
-also consume them one at a time without going through the root.
-
-## What's in here
-
-| Server | Status | What it does |
-|--------|--------|--------------|
-| [`code-graph`](servers/code-graph/) | working | Wraps [`code-review-graph`](https://github.com/tirth8205/code-review-graph) — a persistent, incrementally updated knowledge graph of your codebase, exposed over MCP. The agent calls `get_minimal_context_tool`, `query_graph_tool`, `semantic_search_nodes_tool`, etc. to navigate and reason about code without re-reading whole files every turn. TypeScript-first via tree-sitter. |
-| [`nix-mcp-proxy`](servers/nix-mcp-proxy/) | placeholder | A typed, sealed, middleware-driven MCP proxy that sits between agents and upstream MCP servers, enforcing a whitelist of allowed tools / paths / fields. Lives at [mmmaxwwwell/nix-mcp-proxy](https://github.com/mmmaxwwwell/nix-mcp-proxy); the slot here will become a passthrough once that repo ships a buildable package. |
-| [`docs-fetcher`](servers/docs-fetcher/) | design only | Downloads version-pinned documentation for every tool/dependency your project actually uses, then exposes it over MCP so the agent looks up the *right* docs instead of guessing from training data. |
+Replace Claude Code's built-in tools with MCP servers that mechanically
+pre-process inputs and outputs — adding structure, caching, security scoping,
+and token efficiency. The agent stops reading raw files, running raw shell
+commands, and parsing raw HTML. Instead it calls high-level MCP tools that
+return pre-digested, policy-compliant results.
 
 ## Quick start
 
-In your project's `flake.nix`:
+```bash
+# From any project directory:
+nix run github:mmmaxwwwell/mcp-toolbelt -- "implement the auth module"
+```
+
+This runs `claude-with-servers`, which auto-detects available MCP server
+binaries on PATH, generates a merged `.mcp.json`, and launches Claude Code
+with all servers configured.
+
+## What replaces what
+
+| Built-in Tool | MCP Server | Upstream |
+|---|---|---|
+| `Read`, `Glob`, `Grep` | **codebase** | [nendotools/tree-sitter-mcp](https://github.com/nendotools/tree-sitter-mcp) — AST-enriched search, symbol outlines, usage tracing across 15+ languages |
+| `Edit`, `Write` | **edit-surface** | [metaphorics/mcp-contextual-code-edit](https://github.com/metaphorics/mcp-contexual-code-edit) — tree-sitter validated edits that prevent syntax corruption |
+| `Bash` | **task-runner** | [devrelopers/shell-mcp](https://github.com/devrelopers/shell-mcp) — per-directory `.shell-mcp.toml` allowlists, no arbitrary shell |
+| `Bash (git)` | **git-guard** | [mcp-server-git](https://pypi.org/project/mcp-server-git/) — scoped repos/branches/paths, contributor identity, audit log |
+| `Bash (git)` | **github-api** | [github/github-mcp-server](https://github.com/github/github-mcp-server) — issues, PRs, code search via GitHub API |
+| `WebFetch`, `WebSearch` | **web-browser** | [jae-jae/fetcher-mcp](https://github.com/jae-jae/fetcher-mcp) — Playwright + Readability extraction, token-efficient |
+| *(deep code understanding)* | **code-graph** | [tirth8205/code-review-graph](https://github.com/tirth8205/code-review-graph) — persistent incremental knowledge graph |
+| *(test execution)* | **test-runner** | [privsim/mcp-test-runner](https://github.com/privsim/mcp-test-runner) — structured results across Jest/Pytest/Go/Rust |
+| *(shared storage)* | **sqlite-store** | [RMANOV/sqlite-memory-mcp](https://github.com/RMANOV/sqlite-memory-mcp) — FTS5 + WAL, caches browsed content and search indexes |
+| *(all servers)* | **nix-mcp-proxy** | [mmmaxwwwell/nix-mcp-proxy](https://github.com/mmmaxwwwell/nix-mcp-proxy) — tool whitelisting, rate limiting, audit logging |
+
+## Server catalog
+
+| Server | Status | Slot |
+|--------|--------|------|
+| [`code-graph`](servers/code-graph/) | working | Persistent knowledge graph of your codebase |
+| [`nix-mcp-proxy`](servers/nix-mcp-proxy/) | in development | Proxy middleware for all servers |
+| [`docs-fetcher`](servers/docs-fetcher/) | design only | Version-pinned dependency documentation |
+| `codebase` | planned | Tree-sitter semantic code search |
+| `edit-surface` | planned | AST-aware code editing |
+| `web-browser` | planned | Token-efficient web browsing |
+| `git-guard` | planned | Scoped, audited git operations |
+| `task-runner` | planned | Whitelisted shell commands |
+| `test-runner` | planned | Structured test execution |
+| `sqlite-store` | planned | Shared FTS5 storage backend |
+
+See [`DESIGN.md`](DESIGN.md) for the full architecture, token efficiency
+strategy, and storage design.
+
+## Using in your project
+
+### Option 1: `claude-with-servers` command
+
+Add to your project's `flake.nix`:
 
 ```nix
 {
@@ -29,60 +66,52 @@ In your project's `flake.nix`:
 
   outputs = { self, nixpkgs, flake-utils, mcp-toolbelt }:
     flake-utils.lib.eachDefaultSystem (system:
-      let
-        pkgs = import nixpkgs { inherit system; };
-        toolbelt = mcp-toolbelt.lib.${system}.mkShellHook {
-          projectName = "my-app";
-          servers = {
-            codeGraph = {
-              enable = true;
-              watch = true;
-              # Things the upstream DEFAULT_IGNORE_PATTERNS doesn't already cover.
-              excludeDirs = [ "fixtures" "vendor-snapshots" ];
-            };
-          };
-        };
-      in
+      let pkgs = import nixpkgs { inherit system; }; in
       {
         devShells.default = pkgs.mkShell {
-          packages = [ mcp-toolbelt.packages.${system}.code-review-graph ];
-          shellHook = toolbelt;
+          packages = [
+            mcp-toolbelt.packages.${system}.claude-with-servers
+            mcp-toolbelt.packages.${system}.code-review-graph
+            # Add other server packages as they become available
+          ];
         };
       });
 }
 ```
 
-`nix develop` will then:
-1. Merge `code-review-graph` into your `.mcp.json` (preserving other servers).
-2. Install the upstream Claude Code skill files into `.claude/skills/`.
-3. Register a `PostToolUse` hook so the graph updates after every Edit/Write/Bash.
-4. Start a filesystem watcher so the graph stays fresh between turns.
+Then: `nix develop` → `claude-with-servers`
 
-## Per-server options
+### Option 2: `mkShellHook` (code-graph only, for now)
 
-The full set of options each server accepts is documented in its own README:
+```nix
+shellHook = mcp-toolbelt.lib.${system}.mkShellHook {
+  projectName = "my-app";
+  servers = {
+    codeGraph = {
+      enable = true;
+      watch = true;
+      excludeDirs = [ "fixtures" "vendor-snapshots" ];
+    };
+  };
+};
+```
 
-- [`servers/code-graph/`](servers/code-graph/) — passes options straight through to [`code-review-graph`'s `mkShellHook`](servers/code-graph/flake.nix), including `watch`, `serveMcp`, `autoInstall`, `mcpPort`, `stateDir`, `excludeDirs`.
+### Disabling specific servers
+
+Set environment variables before running `claude-with-servers`:
+
+```bash
+MCP_TOOLBELT_WEB_BROWSER=0 claude-with-servers  # skip fetcher-mcp
+MCP_TOOLBELT_GIT=0 claude-with-servers           # skip mcp-server-git
+```
 
 ## Consuming a single server
-
-If you only want one server, skip the root flake and reference it directly:
 
 ```nix
 inputs.code-graph.url = "github:mmmaxwwwell/mcp-toolbelt?dir=servers/code-graph";
 ```
 
-This is also how the toolbelt itself composes them — each server flake is
-independent, with its own `flake.lock`.
-
-## Why a collection?
-
-Coding agents benefit from a small, opinionated set of MCP servers that
-mechanically pre-process the project before each LLM turn — graph-backed code
-navigation, version-pinned doc lookup, an editing surface that knows the
-project's structure. The toolbelt is a place to assemble those servers under
-one Nix entry point so any new project can opt in with a few lines of flake
-config rather than re-wiring each tool by hand.
+Each server is an independent flake with its own `flake.lock`.
 
 ## License
 

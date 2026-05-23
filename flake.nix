@@ -26,6 +26,12 @@
 
         codeGraphPkg = code-graph.packages.${system}.code-review-graph;
 
+        # claude-with-servers: wrapper script that starts all configured MCP
+        # servers and launches claude with a merged .mcp.json.
+        claude-with-servers = pkgs.writeShellScriptBin "claude-with-servers" (
+          builtins.readFile ./scripts/claude-with-servers
+        );
+
         # Composite mkShellHook — accepts a `servers` attrset where each key
         # toggles a server on/off and forwards its per-server options.
         # Currently only `codeGraph` produces a hook; future servers
@@ -50,7 +56,8 @@
           # Re-export the underlying server packages so consumers can pull
           # individual binaries without going through mkShellHook.
           code-review-graph = codeGraphPkg;
-          default = codeGraphPkg;
+          inherit claude-with-servers;
+          default = claude-with-servers;
         };
 
         lib = {
@@ -60,8 +67,9 @@
         # Dev shell for hacking on the toolbelt itself — gives you the
         # code-review-graph CLI on PATH so you can sanity-check the vendored
         # flake without entering a consumer project.
+        # claude-with-servers is included so you can test the launcher.
         devShells.default = pkgs.mkShell {
-          packages = [ codeGraphPkg pkgs.git pkgs.jq ];
+          packages = [ codeGraphPkg claude-with-servers pkgs.git pkgs.jq ];
         };
       }
     );

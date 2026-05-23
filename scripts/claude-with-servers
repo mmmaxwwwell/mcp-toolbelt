@@ -1,0 +1,166 @@
+#!/usr/bin/env bash
+# claude-with-servers — starts MCP servers and launches claude with them configured.
+# This script is generated/installed by the mcp-toolbelt Nix flake.
+# All server binaries must be on PATH (provided by the Nix shell).
+set -euo pipefail
+
+PROJECT_DIR="${MCP_TOOLBELT_PROJECT_DIR:-$PWD}"
+STATE_DIR="${PROJECT_DIR}/.mcp-toolbelt"
+MCP_CONFIG="${STATE_DIR}/mcp.json"
+PID_DIR="${STATE_DIR}/pids"
+LOG_DIR="${STATE_DIR}/logs"
+
+mkdir -p "$STATE_DIR" "$PID_DIR" "$LOG_DIR"
+
+# Cleanup: kill all managed servers on exit
+cleanup() {
+  echo "[mcp-toolbelt] shutting down servers..."
+  for pidfile in "$PID_DIR"/*.pid; do
+    [ -f "$pidfile" ] || continue
+    local pid
+    pid=$(cat "$pidfile" 2>/dev/null) || continue
+    if kill -0 "$pid" 2>/dev/null; then
+      kill "$pid" 2>/dev/null || true
+      echo "[mcp-toolbelt] stopped $(basename "$pidfile" .pid) (pid $pid)"
+    fi
+    rm -f "$pidfile"
+  done
+}
+trap cleanup EXIT INT TERM
+
+# Start a server process, track its PID
+start_server() {
+  local name="$1"; shift
+  local logfile="$LOG_DIR/${name}.log"
+
+  if [ -f "$PID_DIR/${name}.pid" ] && kill -0 "$(cat "$PID_DIR/${name}.pid" 2>/dev/null)" 2>/dev/null; then
+    echo "[mcp-toolbelt] ${name} already running (pid $(cat "$PID_DIR/${name}.pid"))"
+    return
+  fi
+
+  "$@" >"$logfile" 2>&1 &
+  echo $! > "$PID_DIR/${name}.pid"
+  echo "[mcp-toolbelt] started ${name} (pid $!, log: ${logfile})"
+}
+
+# Build the merged .mcp.json from all enabled servers.
+# Each server section is a JSON object with "command" and "args".
+# The structure follows Claude Code's .mcp.json format:
+# { "mcpServers": { "server-name": { "command": "...", "args": [...] } } }
+build_mcp_config() {
+  local servers="{}"
+
+  # code-graph: already has its own install mechanism, just reference it
+  if command -v code-review-graph &>/dev/null && [ "${MCP_TOOLBELT_CODE_GRAPH:-1}" = "1" ]; then
+    servers=$(echo "$servers" | jq '. + {
+      "code-review-graph": {
+        "command": "code-review-graph",
+        "args": ["serve"]
+      }
+    }')
+  fi
+
+  # codebase (tree-sitter-mcp): semantic code search
+  if command -v tree-sitter-mcp &>/dev/null && [ "${MCP_TOOLBELT_CODEBASE:-1}" = "1" ]; then
+    servers=$(echo "$servers" | jq --arg dir "$PROJECT_DIR" '. + {
+      "tree-sitter-mcp": {
+        "command": "tree-sitter-mcp",
+        "args": ["--project-path", $dir]
+      }
+    }')
+  fi
+
+  # web-browser (fetcher-mcp): token-efficient browsing
+  if command -v fetcher-mcp &>/dev/null && [ "${MCP_TOOLBELT_WEB_BROWSER:-1}" = "1" ]; then
+    servers=$(echo "$servers" | jq '. + {
+      "fetcher-mcp": {
+        "command": "fetcher-mcp",
+        "args": []
+      }
+    }')
+  fi
+
+  # git-guard (mcp-server-git): scoped git operations
+  if command -v mcp-server-git &>/dev/null && [ "${MCP_TOOLBELT_GIT:-1}" = "1" ]; then
+    servers=$(echo "$servers" | jq --arg dir "$PROJECT_DIR" '. + {
+      "mcp-server-git": {
+        "command": "mcp-server-git",
+        "args": ["--repository", $dir]
+      }
+    }')
+  fi
+
+  # github-api: GitHub platform operations
+  if command -v github-mcp-server &>/dev/null && [ "${MCP_TOOLBELT_GITHUB:-1}" = "1" ]; then
+    servers=$(echo "$servers" | jq '. + {
+      "github-mcp-server": {
+        "command": "github-mcp-server",
+        "args": []
+      }
+    }')
+  fi
+
+  # task-runner (shell-mcp): scoped shell commands
+  if command -v shell-mcp &>/dev/null && [ "${MCP_TOOLBELT_TASK_RUNNER:-1}" = "1" ]; then
+    servers=$(echo "$servers" | jq --arg dir "$PROJECT_DIR" '. + {
+      "shell-mcp": {
+        "command": "shell-mcp",
+        "args": ["--project-dir", $dir]
+      }
+    }')
+  fi
+
+  # test-runner: structured test execution
+  if command -v mcp-test-runner &>/dev/null && [ "${MCP_TOOLBELT_TEST_RUNNER:-1}" = "1" ]; then
+    servers=$(echo "$servers" | jq --arg dir "$PROJECT_DIR" '. + {
+      "mcp-test-runner": {
+        "command": "mcp-test-runner",
+        "args": ["--project-dir", $dir]
+      }
+    }')
+  fi
+
+  # sqlite-store: shared FTS5 storage
+  if command -v sqlite-memory-mcp &>/dev/null && [ "${MCP_TOOLBELT_SQLITE_STORE:-1}" = "1" ]; then
+    servers=$(echo "$servers" | jq --arg db "$STATE_DIR/store.db" '. + {
+      "sqlite-store": {
+        "command": "sqlite-memory-mcp",
+        "args": ["--database", $db]
+      }
+    }')
+  fi
+
+  # Merge with existing .mcp.json if present (preserve user-added servers)
+  local existing_config="{}"
+  local project_mcp="${PROJECT_DIR}/.mcp.json"
+  if [ -f "$project_mcp" ]; then
+    existing_config=$(jq '.mcpServers // {}' "$project_mcp" 2>/dev/null || echo "{}")
+  fi
+
+  # Toolbelt servers take precedence over existing config for managed names
+  local merged
+  merged=$(echo "$existing_config" | jq --argjson new "$servers" '. * $new')
+
+  jq -n --argjson servers "$merged" '{ mcpServers: $servers }' > "$MCP_CONFIG"
+  echo "[mcp-toolbelt] wrote $MCP_CONFIG with $(echo "$merged" | jq 'keys | length') servers"
+}
+
+# --- Main ---
+
+echo "[mcp-toolbelt] project: $PROJECT_DIR"
+echo "[mcp-toolbelt] state:   $STATE_DIR"
+
+build_mcp_config
+
+# Count configured servers
+server_count=$(jq '.mcpServers | keys | length' "$MCP_CONFIG")
+echo "[mcp-toolbelt] launching claude with $server_count MCP servers"
+
+# Show which servers are active
+jq -r '.mcpServers | keys[]' "$MCP_CONFIG" | while read -r name; do
+  echo "  - $name"
+done
+
+# Launch claude with the generated MCP config
+# --mcp-config points to our merged config file
+exec claude --mcp-config "$MCP_CONFIG" "$@"
