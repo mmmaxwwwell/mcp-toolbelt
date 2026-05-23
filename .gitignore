@@ -1,0 +1,6 @@
+result
+result-*
+.direnv/
+.code-review-graph/
+.code-review-graphignore
+.mcp.json.bak
