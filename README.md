@@ -19,18 +19,15 @@ with all servers configured.
 
 ## What replaces what
 
-| Built-in Tool | MCP Server | Upstream |
+| Built-in Tool | MCP Server | Approach |
 |---|---|---|
-| `Read`, `Glob`, `Grep` | **codebase** | [nendotools/tree-sitter-mcp](https://github.com/nendotools/tree-sitter-mcp) — AST-enriched search, symbol outlines, usage tracing across 15+ languages |
-| `Edit`, `Write` | **edit-surface** | [metaphorics/mcp-contextual-code-edit](https://github.com/metaphorics/mcp-contexual-code-edit) — tree-sitter validated edits that prevent syntax corruption |
-| `Bash` | **task-runner** | [devrelopers/shell-mcp](https://github.com/devrelopers/shell-mcp) — per-directory `.shell-mcp.toml` allowlists, no arbitrary shell |
-| `Bash (git)` | **git-guard** | [mcp-server-git](https://pypi.org/project/mcp-server-git/) — scoped repos/branches/paths, contributor identity, audit log |
-| `Bash (git)` | **github-api** | [github/github-mcp-server](https://github.com/github/github-mcp-server) — issues, PRs, code search via GitHub API |
-| `WebFetch`, `WebSearch` | **web-browser** | [jae-jae/fetcher-mcp](https://github.com/jae-jae/fetcher-mcp) — Playwright + Readability extraction, token-efficient |
-| *(deep code understanding)* | **code-graph** | [tirth8205/code-review-graph](https://github.com/tirth8205/code-review-graph) — persistent incremental knowledge graph |
-| *(test execution)* | **test-runner** | [privsim/mcp-test-runner](https://github.com/privsim/mcp-test-runner) — structured results across Jest/Pytest/Go/Rust |
-| *(shared storage)* | **sqlite-store** | [RMANOV/sqlite-memory-mcp](https://github.com/RMANOV/sqlite-memory-mcp) — FTS5 + WAL, caches browsed content and search indexes |
-| *(all servers)* | **nix-mcp-proxy** | [mmmaxwwwell/nix-mcp-proxy](https://github.com/mmmaxwwwell/nix-mcp-proxy) — tool whitelisting, rate limiting, audit logging |
+| `Edit`, `Write` (source code) | **[edit-surface](servers/edit-surface/)** | Graph-routed structured ops (`edit_function_body`, `rename_symbol`, `move_symbol`). Per-language backends: `ts-morph` (TS), `libcst` (Python), `go/ast` (Go), `rnix-parser` (Nix). Syntactically valid by construction. |
+| `Read`, `Write` (non-code) | **[fs-fallback](servers/fs-fallback/)** | ACL-gated raw read/write for configs, docs, lockfiles, and unsupported languages. Discouraged for source code — descriptions steer the agent to `edit-surface` first. |
+| `Bash` | **[nix-dev-exec](servers/nix-dev-exec/)** | Registry of named operations defined in `.nix-dev-exec.toml`. Every call expands to `nix develop -c "<command>"`. No free-form shell, no chaining. |
+| `Bash (pnpm)` | **[pnpm-wrapper](servers/pnpm-wrapper/)** | Fixed verbs (`add`, `test`, `run`, `lint`). Structured output. No `dlx` / `exec` / `--global`. Lockfile-aware. |
+| `Read`, `Glob`, `Grep` | **[code-graph](servers/code-graph/)** | Persistent incremental knowledge graph. The agent navigates symbols, not files. Wraps [tirth8205/code-review-graph](https://github.com/tirth8205/code-review-graph). |
+| *(all servers)* | **[nix-mcp-proxy](servers/nix-mcp-proxy/)** | Tool/path/field whitelisting, rate limiting, audit logging. Every wrapper sits behind it. |
+| *(versioned docs)* | **[docs-fetcher](servers/docs-fetcher/)** | Downloads docs pinned to each dependency's resolved version. Stops the agent from inventing APIs based on training-data versions. |
 
 ## Server catalog
 
@@ -38,12 +35,13 @@ with all servers configured.
 |--------|--------|------|
 | [`code-graph`](servers/code-graph/) | working | Persistent knowledge graph of your codebase |
 | [`nix-mcp-proxy`](servers/nix-mcp-proxy/) | in development | Proxy middleware for all servers |
+| [`edit-surface`](servers/edit-surface/) | design only | Graph-routed structured edits (TS/Python/Go/Nix) |
+| [`fs-fallback`](servers/fs-fallback/) | design only | ACL-gated raw read/write for non-code files |
+| [`pnpm-wrapper`](servers/pnpm-wrapper/) | design only | Fixed-verb pnpm wrapper with structured output |
+| [`nix-dev-exec`](servers/nix-dev-exec/) | design only | Registered operations run inside `nix develop -c` |
 | [`docs-fetcher`](servers/docs-fetcher/) | design only | Version-pinned dependency documentation |
-| `codebase` | planned | Tree-sitter semantic code search |
-| `edit-surface` | planned | AST-aware code editing |
 | `web-browser` | planned | Token-efficient web browsing |
 | `git-guard` | planned | Scoped, audited git operations |
-| `task-runner` | planned | Whitelisted shell commands |
 | `test-runner` | planned | Structured test execution |
 | `sqlite-store` | planned | Shared FTS5 storage backend |
 
