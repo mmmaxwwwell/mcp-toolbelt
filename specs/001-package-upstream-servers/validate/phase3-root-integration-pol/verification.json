@@ -1,0 +1,81 @@
+{
+  "phase": "phase3-root-integration-pol",
+  "verifier_version": "1.0",
+  "timestamp": "2026-06-01T12:45:00Z",
+  "tasks_verified": [
+    {
+      "task_id": "T034",
+      "demand_summary": "Verify root flake.nix builds with all 7 new server inputs; fix any input follows or version conflicts",
+      "commands_run": [
+        {"command": "make check > /tmp/make-check-review.log 2>&1", "exit_code": 0, "stdout_excerpt": "All tests passed."}
+      ],
+      "artifacts_inspected": [
+        {"path": "/tmp/make-check-review.log", "key_fields": {"scripts_run": 11, "all_pass": true}},
+        {"path": "tests/codebase.sh output", "key_fields": {"binary": "/nix/store/bjm6jwlgfmpng5qs354x5vv922lsrwcj-tree-sitter-mcp-2.8.2/bin/tree-sitter-mcp", "tools": 4}},
+        {"path": "tests/git-guard.sh output", "key_fields": {"binary": "/nix/store/3m3g7cy0c2hl4cmz8iksjn4h8wkvyjjx-mcp-server-git-2026.1.14/bin/mcp-server-git", "tools": 12}},
+        {"path": "tests/web-browser.sh output", "key_fields": {"binary": "/nix/store/kygjc0vv1j4ibs7hcir70nz07f8miz58-web-browser-sidecar-0.1.0/bin/web-browser-sidecar", "tools": 7}},
+        {"path": "tests/sqlite-store.sh output", "key_fields": {"binary": "/nix/store/fnmdfkqc68m9x3wvwlq2dbsqdmp2029i-sqlite-memory-mcp-3.12.0/bin/sqlite-memory-mcp", "tools": 9}}
+      ],
+      "verdict": "satisfied",
+      "evidence": "All 8 server binaries exist in /nix/store/ paths as shown in make check output. Each per-server test verifies binary presence, MCP initialize (protocolVersion=2024-11-05), and tool listing with specific counts.",
+      "lie_check": "Checked that nix store paths are real and unique per binary (not symlinks to stubs). Each binary has a version-specific store path. The make check output includes specific tool counts per server (12, 4, 9, 2, 1, 7, 4, 1) — a stub would return 0 tools."
+    },
+    {
+      "task_id": "T035",
+      "demand_summary": "Run integration test with all servers on PATH; verify .mcp.json contains all 8+ servers",
+      "commands_run": [
+        {"command": "make check > /tmp/make-check-review.log 2>&1", "exit_code": 0, "stdout_excerpt": "PASS: config has 9 server(s)\nPASS: all 9 expected servers present"}
+      ],
+      "artifacts_inspected": [
+        {"path": "tests/integration.sh", "key_fields": {"expected_servers_count": 9, "servers_listed": ["code-review-graph", "mcp-server-git", "tree-sitter-mcp", "web-browser", "web-search", "shell-mcp", "semantic-edit-mcp", "mcp-test-runner", "sqlite-store"]}},
+        {"path": "/tmp/make-check-review.log (integration section)", "key_fields": {"server_count": 9, "all_present": true, "all_have_command_and_args": true}}
+      ],
+      "verdict": "satisfied",
+      "evidence": "integration.sh line 63-73 defines EXPECTED_SERVERS with 9 entries. make check output shows: 'PASS: config has 9 server(s)' and 'PASS: all 9 expected servers present'. Each server listed with command and args in detected servers output.",
+      "lie_check": "Verified the EXPECTED_SERVERS array in integration.sh contains 9 specific server names (not a wildcard or count check). The test checks each by name via jq --arg, not just count. The make check output lists all 9 servers with their actual commands (e.g., 'code-review-graph: code-review-graph serve')."
+    },
+    {
+      "task_id": "T036",
+      "demand_summary": "Test env var toggles: for each server, MCP_TOOLBELT_<NAME>=0 should exclude it from .mcp.json",
+      "commands_run": [
+        {"command": "make check > /tmp/make-check-review.log 2>&1", "exit_code": 0, "stdout_excerpt": "PASS: [MCP_TOOLBELT_CODE_GRAPH=0] server 'code-review-graph' correctly absent\n...9 toggle tests..."}
+      ],
+      "artifacts_inspected": [
+        {"path": "tests/env-toggles.sh", "key_fields": {"toggles_count": 9, "assertion_type": "jq checks server_key absent from .mcpServers"}},
+        {"path": "/tmp/make-check-review.log (env-toggles section)", "key_fields": {"pass_count": 9, "fail_count": 0}}
+      ],
+      "verdict": "satisfied",
+      "evidence": "env-toggles.sh defines 9 TOGGLES entries (lines 34-44). make check output shows 9 individual PASS lines, one per toggle. Each toggle disables exactly one server and verifies it is absent from the generated config while the other 8 remain.",
+      "lie_check": "Verified each toggle test creates a fresh project dir and checks config content via jq. The || true on line 58 does NOT disable assertion — the assertion is on line 68 (jq -e check). Confirmed output shows 8 servers remaining when each toggle is set (e.g., 'wrote mcp.json with 8 servers' for each toggle test)."
+    },
+    {
+      "task_id": "T037",
+      "demand_summary": "Update README.md server catalog: change status to 'packaged' for all newly packaged servers",
+      "commands_run": [
+        {"command": "git diff 49d7fc4714b45a3ceb0d7c1dfebf6440795068e8~1...HEAD -- README.md", "exit_code": 0, "stdout_excerpt": "6 status changes + 2 new rows (codebase, task-runner)"}
+      ],
+      "artifacts_inspected": [
+        {"path": "README.md", "key_fields": {"packaged_servers": ["codebase", "edit-surface", "web-browser", "web-search", "git-guard", "test-runner", "sqlite-store", "task-runner"], "all_have_hyperlinks": true}}
+      ],
+      "verdict": "satisfied",
+      "evidence": "README.md lines 39-51: all 8 new servers show 'packaged' status with hyperlinks to their server directories. Diff shows: edit-surface, web-browser, web-search, git-guard, test-runner, sqlite-store changed from planned/design-only; codebase and task-runner added as new rows.",
+      "lie_check": "Read README.md directly (not claims). Verified each of the 8 servers has 'packaged' in its Status column and a working hyperlink pattern [name](servers/name/). Confirmed code-graph retains 'working' status (not changed to packaged)."
+    },
+    {
+      "task_id": "T038",
+      "demand_summary": "Run make check — all tests must pass",
+      "commands_run": [
+        {"command": "make check > /tmp/make-check-review.log 2>&1", "exit_code": 0, "stdout_excerpt": "All tests passed."}
+      ],
+      "artifacts_inspected": [
+        {"path": "/tmp/make-check-review.log", "key_fields": {"total_scripts": 11, "all_pass": true, "exit_code": 0}},
+        {"path": "Makefile", "key_fields": {"check_target": "runs all tests/*.sh, fails on any non-zero exit"}}
+      ],
+      "verdict": "satisfied",
+      "evidence": "make check exit code 0. Log shows 11 scripts ran (codebase, edit-surface, env-toggles, git-guard, integration, lib, sqlite-store, task-runner, test-runner, web-browser, web-search). All show '=== ALL PASSED ===' except lib.sh (library file, produces no output). Final line: 'All tests passed.'",
+      "lie_check": "Re-ran make check myself (not trusting prior agent's claim). Verified Makefile sets fail=1 on any non-zero script exit and exits 1 if fail != 0. No silent-skip: empty TEST_SCRIPTS causes explicit failure (Makefile line 8-10). The claim said '10 test scripts' but 11 files ran — lib.sh is a library not a test, so the count difference is cosmetic."
+    }
+  ],
+  "overall_verdict": "pass",
+  "blocking_failures": []
+}
