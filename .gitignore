@@ -4,3 +4,18 @@ result-*
 .code-review-graph/
 .code-review-graphignore
 .mcp.json.bak
+
+# spec-kit baseline
+test-logs/
+logs/
+validate/
+attempts/
+.env
+node_modules/
+dist/
+*.db
+
+# spec-kit runner coordination state (local-only, not deliverables)
+specs/*/claims/
+specs/*/reasoning/
+specs/*/run-log.jsonl

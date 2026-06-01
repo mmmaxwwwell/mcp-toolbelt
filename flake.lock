@@ -19,6 +19,25 @@
       },
       "parent": []
     },
+    "codebase": {
+      "inputs": {
+        "flake-utils": [
+          "flake-utils"
+        ],
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "path": "./servers/codebase",
+        "type": "path"
+      },
+      "original": {
+        "path": "./servers/codebase",
+        "type": "path"
+      },
+      "parent": []
+    },
     "flake-utils": {
       "inputs": {
         "systems": "systems"
@@ -36,6 +55,25 @@
         "repo": "flake-utils",
         "type": "github"
       }
+    },
+    "git-guard": {
+      "inputs": {
+        "flake-utils": [
+          "flake-utils"
+        ],
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "path": "./servers/git-guard",
+        "type": "path"
+      },
+      "original": {
+        "path": "./servers/git-guard",
+        "type": "path"
+      },
+      "parent": []
     },
     "nixpkgs": {
       "locked": {
@@ -56,8 +94,14 @@
     "root": {
       "inputs": {
         "code-graph": "code-graph",
+        "codebase": "codebase",
         "flake-utils": "flake-utils",
-        "nixpkgs": "nixpkgs"
+        "git-guard": "git-guard",
+        "nixpkgs": "nixpkgs",
+        "task-runner": "task-runner",
+        "test-runner": "test-runner",
+        "web-browser": "web-browser",
+        "web-search": "web-search"
       }
     },
     "systems": {
@@ -74,6 +118,82 @@
         "repo": "default",
         "type": "github"
       }
+    },
+    "task-runner": {
+      "inputs": {
+        "flake-utils": [
+          "flake-utils"
+        ],
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "path": "./servers/task-runner",
+        "type": "path"
+      },
+      "original": {
+        "path": "./servers/task-runner",
+        "type": "path"
+      },
+      "parent": []
+    },
+    "test-runner": {
+      "inputs": {
+        "flake-utils": [
+          "flake-utils"
+        ],
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "path": "./servers/test-runner",
+        "type": "path"
+      },
+      "original": {
+        "path": "./servers/test-runner",
+        "type": "path"
+      },
+      "parent": []
+    },
+    "web-browser": {
+      "inputs": {
+        "flake-utils": [
+          "flake-utils"
+        ],
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "path": "./servers/web-browser",
+        "type": "path"
+      },
+      "original": {
+        "path": "./servers/web-browser",
+        "type": "path"
+      },
+      "parent": []
+    },
+    "web-search": {
+      "inputs": {
+        "flake-utils": [
+          "flake-utils"
+        ],
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "path": "./servers/web-search",
+        "type": "path"
+      },
+      "original": {
+        "path": "./servers/web-search",
+        "type": "path"
+      },
+      "parent": []
     }
   },
   "root": "root",

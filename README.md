@@ -26,6 +26,8 @@ with all servers configured.
 | `Bash` | **[nix-dev-exec](servers/nix-dev-exec/)** | Registry of named operations defined in `.nix-dev-exec.toml`. Every call expands to `nix develop -c "<command>"`. No free-form shell, no chaining. |
 | `Bash (pnpm)` | **[pnpm-wrapper](servers/pnpm-wrapper/)** | Fixed verbs (`add`, `test`, `run`, `lint`). Structured output. No `dlx` / `exec` / `--global`. Lockfile-aware. |
 | `Read`, `Glob`, `Grep` | **[code-graph](servers/code-graph/)** | Persistent incremental knowledge graph. The agent navigates symbols, not files. Wraps [tirth8205/code-review-graph](https://github.com/tirth8205/code-review-graph). |
+| `WebFetch` | **[web-browser](servers/web-browser/)** | Sidecar around [jae-jae/fetcher-mcp](https://github.com/jae-jae/fetcher-mcp): Playwright + Readability + Turndown for full JS rendering, with every extracted page written to a user-global SQLite FTS5 index at `~/.cache/mcp-toolbelt/web-cache.db`. Adds `search_cached`, `get_cached`, `list_cached`, `purge_cached` on top of the upstream fetch tool. |
+| `WebSearch` | **[web-search](servers/web-search/)** | DuckDuckGo-backed search, no API key required. Wraps [pskill9/web-search](https://github.com/pskill9/web-search). Tavily/Exa are documented opt-in upgrades for users who bring a key. |
 | *(all servers)* | **[nix-mcp-proxy](servers/nix-mcp-proxy/)** | Tool/path/field whitelisting, rate limiting, audit logging. Every wrapper sits behind it. |
 | *(versioned docs)* | **[docs-fetcher](servers/docs-fetcher/)** | Downloads docs pinned to each dependency's resolved version. Stops the agent from inventing APIs based on training-data versions. |
 
@@ -40,7 +42,8 @@ with all servers configured.
 | [`pnpm-wrapper`](servers/pnpm-wrapper/) | design only | Fixed-verb pnpm wrapper with structured output |
 | [`nix-dev-exec`](servers/nix-dev-exec/) | design only | Registered operations run inside `nix develop -c` |
 | [`docs-fetcher`](servers/docs-fetcher/) | design only | Version-pinned dependency documentation |
-| `web-browser` | planned | Token-efficient web browsing |
+| [`web-browser`](servers/web-browser/) | design only | Sidecar wrapping [fetcher-mcp](https://github.com/jae-jae/fetcher-mcp); writes extracted markdown to a user-global SQLite FTS5 index for cross-page search |
+| [`web-search`](servers/web-search/) | design only | DuckDuckGo search via [pskill9/web-search](https://github.com/pskill9/web-search); Tavily/Exa opt-in |
 | `git-guard` | planned | Scoped, audited git operations |
 | `test-runner` | planned | Structured test execution |
 | `sqlite-store` | planned | Shared FTS5 storage backend |
@@ -99,7 +102,8 @@ shellHook = mcp-toolbelt.lib.${system}.mkShellHook {
 Set environment variables before running `claude-with-servers`:
 
 ```bash
-MCP_TOOLBELT_WEB_BROWSER=0 claude-with-servers  # skip fetcher-mcp
+MCP_TOOLBELT_WEB_BROWSER=0 claude-with-servers  # skip mcp-read-website-fast
+MCP_TOOLBELT_WEB_SEARCH=0 claude-with-servers   # skip pskill9/web-search
 MCP_TOOLBELT_GIT=0 claude-with-servers           # skip mcp-server-git
 ```
 

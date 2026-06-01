@@ -20,8 +20,8 @@ Every built-in Claude Code tool mapped to its MCP server replacement:
 | `Glob` | `codebase` | File discovery through the indexed AST + code-graph. No filesystem scanning. |
 | `Grep` | `codebase` + `sqlite-store` | FTS5 over indexed codebase. Ranked results, instant — no cold-start scanning. |
 | `Bash` | `task-runner` (shell-mcp) | Per-directory TOML allowlists. Only blessed commands (build, test, lint, format). Structured output. |
-| `WebFetch` | `web-browser` (fetcher-mcp) | Real Playwright browser → Readability extraction → cached to FTS store. Token-efficient. |
-| `WebSearch` | `web-browser` | Search → auto-fetch top results → extract → cache. Semantic discovery over browsed content. |
+| `WebFetch` | `web-browser` (fetcher-mcp + FTS5 sidecar) | Playwright + Readability + Turndown extraction; every fetch is also indexed into a user-global SQLite FTS5 store so the agent can `search_cached(query)` across every page ever fetched. |
+| `WebSearch` | `web-search` (pskill9/web-search) | DuckDuckGo-backed search, no API key required. Tavily/Exa are documented opt-in upgrades. |
 | `Bash (git)` | `git-guard` (mcp-server-git + proxy) | Scoped repos/branches/paths. Contributor identity stamped. Destructive ops blocked. Audit log. |
 | `Agent` | *(keep as-is)* | Orchestration stays with the model. |
 | `AskUserQuestion` | *(keep as-is)* | No replacement needed. |
@@ -42,12 +42,29 @@ Every built-in Claude Code tool mapped to its MCP server replacement:
 - **Replaces:** `Read`, `Glob`, `Grep` — agent asks "find all functions that call X" instead of grepping.
 - **Enhancement:** Pair with `sqlite-store` for FTS over file contents. Proxy scopes reads to allowed paths.
 
-#### `web-browser` — Token-efficient browsing
-- **Upstream:** [jae-jae/fetcher-mcp](https://github.com/jae-jae/fetcher-mcp) (TypeScript)
-- **What it does:** Playwright headless browser renders pages with full JS, then runs Mozilla's Readability algorithm to extract just the meaningful content. Returns clean markdown, not raw HTML.
-- **Replaces:** `WebFetch`, `WebSearch` — agent gets pre-digested content, not HTML soup.
-- **Enhancement:** Cache extracted content to `sqlite-store` FTS5 so repeated lookups are free. Add a `search_browsed(query)` tool that searches previously fetched content.
-- **Alternative:** [microsoft/playwright-mcp](https://github.com/microsoft/playwright-mcp) for interactive browsing (form filling, clicking), but 4x more tokens per interaction.
+#### `web-browser` — Sidecar over fetcher-mcp with FTS5 cross-page search
+- **Upstream:** [jae-jae/fetcher-mcp](https://github.com/jae-jae/fetcher-mcp) (TypeScript, MIT)
+- **Shape:** Sidecar MCP server. Our server speaks MCP to the agent and spawns `fetcher-mcp` as a child process over stdio. We pass `fetch_url`-style calls through, then on success we write the extracted markdown to a SQLite FTS5 store before returning the result to the agent. Upstream stays untouched — free upgrades when `fetcher-mcp` releases.
+- **What it does:** Playwright headless browser renders pages with full JS (covers modern SPA docs), then Mozilla's Readability + Turndown extracts clean markdown. Every successful fetch is indexed into FTS5 so the agent can later search across every page it's ever fetched.
+- **Storage:** User-global SQLite database at `~/.cache/mcp-toolbelt/web-cache.db` with FTS5 + WAL mode. One index shared across all projects on the machine — bigger corpus to search at the cost of cross-project bleed (acceptable: it's docs from the public web, not project source).
+- **Schema:** `pages(id, url UNIQUE, title, fetched_at, markdown)` + `pages_fts USING fts5(title, markdown, content='pages')`. URL is the natural key; second fetch of the same URL replaces the row (URLs evolve, the freshest copy wins).
+- **Replaces:** `WebFetch` — agent gets pre-digested markdown plus cross-page search, not HTML soup re-fetched every turn.
+- **Added tools on top of fetcher-mcp:**
+  - `search_cached(query, limit?)` — FTS5 BM25 search; returns `[{url, title, fetched_at, snippet}]`
+  - `get_cached(url)` — full markdown from cache, no network
+  - `list_cached(filter?)` — enumerate URLs with title + fetched_at; agent can ask "what have I been reading?"
+  - `purge_cached(url?)` — drop a stale row when an upstream doc page changed
+- **Composition note:** The FTS5 store is logically a subset of what `sqlite-store` would manage. When `sqlite-store` is built, `web-browser` may migrate to writing into its `web.*` namespace instead of owning a private DB. Until then the private DB keeps `web-browser` self-contained.
+- **Disqualified alternatives:**
+  - `mcp-read-website-fast`: lighter (no Chromium) but no JS rendering, so SPA docs return garbage. Modern API references (Stripe, Vercel, etc.) need Playwright.
+  - Firecrawl/Tavily/Exa: paid API keys, wrong default for a flake collection.
+  - Microsoft `playwright-mcp`: returns verbose accessibility trees, designed for browser automation not doc reading.
+
+#### `web-search` — Free web search
+- **Upstream:** [pskill9/web-search](https://github.com/pskill9/web-search) (TypeScript, MIT)
+- **What it does:** DuckDuckGo-backed search, returns ranked result list with titles + snippets + URLs. No API key required.
+- **Replaces:** `WebSearch` — orthogonal to `web-browser`; search to discover URLs, fetch+extract to read them.
+- **Opt-in upgrades:** Users who bring their own API key can swap in `tavily-ai/tavily-mcp` or `exa-labs/exa-mcp-server` for higher-quality semantic search. Document both in `servers/web-search/README.md`.
 
 #### `git-guard` — Scoped, audited git operations
 - **Upstream:** [modelcontextprotocol/servers — git](https://pypi.org/project/mcp-server-git/) (Python, official) + policy layer via `nix-mcp-proxy`

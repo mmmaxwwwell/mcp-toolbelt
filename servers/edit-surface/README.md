@@ -1,121 +1,137 @@
-# edit-surface (design only)
+# edit-surface
 
-Graph-routed structured edits as the **primary** code-editing surface. The
-agent doesn't see file paths and content — it sees symbols and operations.
-The server reserializes from AST after each edit, guaranteeing syntactic
-validity by construction.
+Nix packaging for [`jbr/semantic-edit-mcp`](https://github.com/jbr/semantic-edit-mcp)
+(pinned to tag `v0.2.1`) — a Model Context Protocol server for AST-aware
+code editing using tree-sitter.
 
-## Status
+> **Note**: The spec references the fork at
+> [`metaphorics/mcp-contexual-code-edit`](https://github.com/metaphorics/mcp-contexual-code-edit)
+> (note the typo "contexual"). That fork is behind upstream (only v0.1.2)
+> and has no additional value. We pin to the canonical upstream
+> [`jbr/semantic-edit-mcp`](https://github.com/jbr/semantic-edit-mcp)
+> which is actively maintained and published to
+> [crates.io](https://crates.io/crates/semantic-edit-mcp).
 
-Design only — no implementation yet. This README locks the *shape* (per-language
-backends, op surface, return contract) so the eventual implementation doesn't
-drift toward "AST-validated string edits at file paths" (which is a 60%
-solution but a one-way door for the API).
+## Upstream research
 
-## Why graph-routed instead of file-path edits
-
-| Problem with file/string edits | How structured ops fix it |
+| Field | Value |
 |---|---|
-| Agent corrupts syntax (mismatched braces, broken JSX) | Server reserializes from AST; invalid edits rejected before write |
-| Agent re-reads 800-line files to change 3 lines | `get_function_body(symbol)` returns ~30 tokens; `edit_function_body(symbol, new_body)` writes back |
-| Rename misses one call site, breaks build | `rename_symbol` walks every reference in the graph atomically |
-| Imports drift (unused, missing, wrong path) | `add_import` / `remove_unused_imports` are first-class ops |
-| Agent invents methods that already exist | `list_methods(class)` is cheap; agent checks before adding |
+| Crate | [`semantic-edit-mcp`](https://crates.io/crates/semantic-edit-mcp) |
+| Version | **0.2.1** (tag `v0.2.1`, commit `7af1a1c`, 2025-07-29) |
+| Repository | [jbr/semantic-edit-mcp](https://github.com/jbr/semantic-edit-mcp) |
+| License | MIT OR Apache-2.0 |
+| Language | Rust (edition 2024, requires rustc 1.85+) |
+| Build system | Cargo (`Cargo.lock` present on tagged releases) |
+| Entry point | `semantic-edit-mcp` binary (from `src/main.rs`) |
+| Stdio mode | Default — no special flags needed (optional `serve` subcommand also works) |
+| MCP SDK | `mcplease 0.2.3` (lightweight MCP server crate) |
 
-## Per-language backend strategy
+### Cargo dependencies
 
-One MCP server, one op surface, multiple backends. The agent calls
-`edit_function_body(symbol="src/auth.ts:login", body="…")` and the server
-routes to the right backend based on the file's language.
+**Runtime (from `Cargo.toml` at v0.2.1):**
 
-| Language | Backend | Capabilities |
+| Package | Version | Purpose |
 |---|---|---|
-| TypeScript / JavaScript | [`ts-morph`](https://ts-morph.com/) (TS Compiler API wrapper) | Full structural ops — rename across project, move, extract, import management, JSX |
-| Python | [`libcst`](https://github.com/Instagram/LibCST) | Concrete syntax tree preserves whitespace/comments; round-trip safe |
-| Go | `go/ast` + `go/parser` + `gofmt` (invoked via `nix-dev-exec`) | Native toolchain produces canonical output |
-| Nix | [`rnix-parser`](https://github.com/nix-community/rnix-parser) | Lossless CST for the Nix language |
-| Rust *(future)* | `syn` + `rustfmt` | After v0.3 |
-| (anything else) | not supported — falls through to [`fs-fallback`](../fs-fallback/) with a warning in the tool response |
+| mcplease | 0.2.3 | MCP protocol handling |
+| clap | 4.5 | CLI argument parsing |
+| serde | 1.0 | Serialization |
+| serde_json | 1.0 | JSON handling |
+| tokio | 1.45 | Async runtime |
+| anyhow | 1.0 | Error handling |
+| tree-sitter | 0.25 | AST parsing core |
+| tree-sitter-rust | 0.24 | Rust grammar |
+| tree-sitter-javascript | — | JavaScript grammar |
+| tree-sitter-typescript | — | TypeScript grammar |
+| tree-sitter-python | — | Python grammar |
+| tree-sitter-json | — | JSON grammar |
+| walkdir | 2.5 | Directory traversal |
+| ropey | 1.6 | Rope-based text editing |
+| diffy | — | Diff generation |
 
-Tree-sitter is **not** used here — it's read-only for navigation in
-[`code-graph`](../code-graph/). edit-surface needs semantic resolution
-(rename across files, type-aware moves), which tree-sitter alone can't give.
+### MCP tools
 
-## MCP tool surface (planned)
+**Core editing (AST-aware):**
 
-All tools take **symbol references**, not file paths. A symbol reference is
-`<path>:<qualified-name>` or a graph node id from `code-graph`.
+| Tool | Description |
+|---|---|
+| `replace_node` | Replace an entire AST node with new content |
+| `insert_before_node` | Insert content before a node |
+| `insert_after_node` | Insert content after a node |
+| `wrap_node` | Wrap an existing node with new syntax |
 
-### Read
+**Specialized insertion (Rust-specific):**
 
-- `get_symbol(ref)` — source + location + immediate context (callers, callees, type)
-- `get_function_body(ref)` — body only, no signature noise
-- `list_methods(class_ref)` — what's already on this class
-- `list_imports(file_ref)` — what's imported, by what name, used where
-- `find_symbol_by_name(name, kind?)` — disambiguation for the agent
+| Tool | Description |
+|---|---|
+| `insert_after_struct` | Insert after struct definitions |
+| `insert_after_enum` | Insert after enum declarations |
+| `insert_after_impl` | Insert after impl blocks |
+| `insert_after_function` | Insert after function definitions |
+| `insert_in_module` | Smart module-level positioning |
 
-### Write
+**Utility:**
 
-- `edit_function_body(ref, new_body)` — replace body, signature unchanged
-- `replace_symbol(ref, new_source)` — replace full definition (signature + body)
-- `rename_symbol(ref, new_name)` — atomic across all references
-- `move_symbol(ref, target_file)` — moves definition, updates all imports
-- `add_method(class_ref, source)` — append a method to a class
-- `add_import(file_ref, module, names)` — adds or merges with existing import
-- `remove_unused_imports(file_ref)`
-- `extract_function(file_ref, start, end, new_name)` — refactoring primitive
+| Tool | Description |
+|---|---|
+| `validate_syntax` | Check code validity (file or inline) |
+| `get_node_info` | Get AST node info at a location |
 
-### Inspect
+All operations support `preview_only: true` for dry-run mode.
 
-- `dry_run(op)` — returns the diff that *would* be applied, plus list of
-  files touched, without writing
-- `which_backend(file_ref)` — what backend would handle this file
+### Node selectors
 
-## Return contract
+Nodes can be targeted by:
+- **Position** — line and column
+- **Name + type** — e.g., struct named `Foo`
+- **Type only** — e.g., all `impl` blocks
+- **Tree-sitter query** — arbitrary pattern matching
 
-Every write op returns:
+### Environment variables
 
-```json
+| Variable | Purpose |
+|---|---|
+| `MCP_SESSION_STORAGE_PATH` | Override session storage path (default: `~/.ai-tools/sessions/semantic-edit.json`) |
+
+### Language support
+
+v0.2.1 supports Rust, JavaScript, TypeScript, Python, JSON, and TOML via
+tree-sitter grammar crates. The architecture is extensible — additional
+languages require adding the tree-sitter grammar dependency and a parser module.
+
+## Packaging notes
+
+- Written in Rust — use `buildRustPackage` with `fetchFromGitHub`.
+- **Published to crates.io** as `semantic-edit-mcp`, but use `fetchFromGitHub`
+  for the `Cargo.lock` and full source tree.
+- Pin to tag `v0.2.1` (commit `7af1a1c`, 2025-07-29). `Cargo.lock` is present
+  on tagged releases.
+- Rust edition 2024 requires nixpkgs Rust ≥ 1.85. Nixpkgs unstable should
+  have this.
+- Tree-sitter grammars are pure Rust crates (no native C compilation needed
+  for the grammars since tree-sitter 0.25 uses Rust bindings).
+- Binary name for `meta.mainProgram`: `semantic-edit-mcp`.
+- No special flags for MCP stdio mode — just run the binary directly.
+
+## Standalone use
+
+```nix
 {
-  "ok": true,
-  "files_changed": ["src/auth.ts", "src/api/handlers.ts"],
-  "symbols_affected": ["login", "loginHandler"],
-  "context": "<minimal post-edit context slice — callers, tests covering it>",
-  "warnings": ["…"]
+  inputs.edit-surface.url = "github:mmmaxwwwell/mcp-toolbelt?dir=servers/edit-surface";
+
+  outputs = { self, nixpkgs, flake-utils, edit-surface }:
+    flake-utils.lib.eachDefaultSystem (system:
+      let pkgs = import nixpkgs { inherit system; }; in
+      {
+        devShells.default = pkgs.mkShell {
+          packages = [ edit-surface.packages.${system}.default ];
+        };
+      });
 }
 ```
 
-The `context` field is the key efficiency win: the agent gets the post-edit
-graph slice for free, so it doesn't need a follow-up `get_review_context_tool`
-call to decide what to do next.
-
-## Briefing pattern
-
-Every tool's `description` field is a guaranteed-read briefing slot. Pattern:
-
-> **What this does.** One sentence.
-> **When to use.** vs. `fs-fallback.write` and similar.
-> **Invariant.** What the server guarantees you don't have to verify.
-
-A top-level `start_session(task)` tool returns the project's invariants —
-language conventions, what's allowlisted, what's behind `fs-fallback`, the
-agent's mission — every turn. The skill enforces calling it first.
-
 ## Composition
 
-This server sits behind [`nix-mcp-proxy`](../nix-mcp-proxy/), which enforces
-the project's per-symbol / per-path allowlist. The server itself trusts its
-inputs; the proxy is the policy layer.
-
-## Open design questions
-
-- **Cross-file atomicity.** `rename_symbol` touches N files. If one write
-  fails midway, do we rollback (transaction log) or report partial-failure?
-- **Concurrent edits.** Agent + human editor on the same file. Lock?
-  Detect-and-reject? Three-way merge?
-- **Generated code.** `*.gen.ts`, protobuf output, schema-generated types
-  — refuse edits and direct to the generator's source?
-- **Comments and whitespace.** ts-morph and libcst differ on round-trip
-  preservation. Need a consistent stance across backends.
-- **Formatter integration.** Always run prettier/black/gofmt/nixpkgs-fmt
-  after each edit, or expose `format_file(ref)` as a separate op?
+The `edit-surface` slot provides AST-aware code editing operations via
+tree-sitter. The server validates syntax before and after edits, preventing
+file corruption. Pairs with `code-graph` (read-only navigation via
+tree-sitter) and `test-runner` (run tests to verify edits).

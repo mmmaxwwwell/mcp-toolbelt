@@ -65,23 +65,23 @@ build_mcp_config() {
     servers=$(echo "$servers" | jq --arg dir "$PROJECT_DIR" '. + {
       "tree-sitter-mcp": {
         "command": "tree-sitter-mcp",
-        "args": ["--project-path", $dir]
+        "args": ["--mcp", "--project-path", $dir]
       }
     }')
   fi
 
-  # web-browser (fetcher-mcp): token-efficient browsing
-  if command -v fetcher-mcp &>/dev/null && [ "${MCP_TOOLBELT_WEB_BROWSER:-1}" = "1" ]; then
+  # web-browser (sidecar wrapping fetcher-mcp): token-efficient browsing + FTS5 cache
+  if command -v web-browser-sidecar &>/dev/null && [ "${MCP_TOOLBELT_WEB_BROWSER:-1}" = "1" ]; then
     servers=$(echo "$servers" | jq '. + {
-      "fetcher-mcp": {
-        "command": "fetcher-mcp",
+      "web-browser": {
+        "command": "web-browser-sidecar",
         "args": []
       }
     }')
   fi
 
   # git-guard (mcp-server-git): scoped git operations
-  if command -v mcp-server-git &>/dev/null && [ "${MCP_TOOLBELT_GIT:-1}" = "1" ]; then
+  if command -v mcp-server-git &>/dev/null && [ "${MCP_TOOLBELT_GIT_GUARD:-1}" = "1" ]; then
     servers=$(echo "$servers" | jq --arg dir "$PROJECT_DIR" '. + {
       "mcp-server-git": {
         "command": "mcp-server-git",
@@ -100,22 +100,32 @@ build_mcp_config() {
     }')
   fi
 
+  # web-search: web search via Google scraping (no API key)
+  if command -v web-search &>/dev/null && [ "${MCP_TOOLBELT_WEB_SEARCH:-1}" = "1" ]; then
+    servers=$(echo "$servers" | jq '. + {
+      "web-search": {
+        "command": "web-search",
+        "args": []
+      }
+    }')
+  fi
+
   # task-runner (shell-mcp): scoped shell commands
   if command -v shell-mcp &>/dev/null && [ "${MCP_TOOLBELT_TASK_RUNNER:-1}" = "1" ]; then
     servers=$(echo "$servers" | jq --arg dir "$PROJECT_DIR" '. + {
       "shell-mcp": {
         "command": "shell-mcp",
-        "args": ["--project-dir", $dir]
+        "args": ["--root", $dir]
       }
     }')
   fi
 
   # test-runner: structured test execution
   if command -v mcp-test-runner &>/dev/null && [ "${MCP_TOOLBELT_TEST_RUNNER:-1}" = "1" ]; then
-    servers=$(echo "$servers" | jq --arg dir "$PROJECT_DIR" '. + {
+    servers=$(echo "$servers" | jq '. + {
       "mcp-test-runner": {
         "command": "mcp-test-runner",
-        "args": ["--project-dir", $dir]
+        "args": []
       }
     }')
   fi

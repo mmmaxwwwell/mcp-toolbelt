@@ -18,6 +18,7 @@
           packageOverrides = self: super: {
             inquirer = super.inquirer.overridePythonAttrs (_: { doCheck = false; });
             mcp = super.mcp.overridePythonAttrs (_: { doCheck = false; });
+            portalocker = super.portalocker.overridePythonAttrs (_: { doCheck = false; });
           };
         };
 
@@ -40,7 +41,7 @@
           # Upstream pins tree-sitter-language-pack <1 (nixpkgs has 1.4.1)
           # and watchdog <6 (nixpkgs has 6.0.0).  Both are minor bumps with
           # no real incompatibility — relax the ranges.
-          pythonRelaxDeps = [ "tree-sitter-language-pack" "watchdog" ];
+          pythonRelaxDeps = [ "tree-sitter-language-pack" "watchdog" "fastmcp" ];
 
           dependencies = with python.pkgs; [
             mcp

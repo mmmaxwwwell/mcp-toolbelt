@@ -12,6 +12,30 @@
     code-graph.inputs.nixpkgs.follows = "nixpkgs";
     code-graph.inputs.flake-utils.follows = "flake-utils";
 
+    git-guard.url = "path:./servers/git-guard";
+    git-guard.inputs.nixpkgs.follows = "nixpkgs";
+    git-guard.inputs.flake-utils.follows = "flake-utils";
+
+    codebase.url = "path:./servers/codebase";
+    codebase.inputs.nixpkgs.follows = "nixpkgs";
+    codebase.inputs.flake-utils.follows = "flake-utils";
+
+    web-browser.url = "path:./servers/web-browser";
+    web-browser.inputs.nixpkgs.follows = "nixpkgs";
+    web-browser.inputs.flake-utils.follows = "flake-utils";
+
+    web-search.url = "path:./servers/web-search";
+    web-search.inputs.nixpkgs.follows = "nixpkgs";
+    web-search.inputs.flake-utils.follows = "flake-utils";
+
+    task-runner.url = "path:./servers/task-runner";
+    task-runner.inputs.nixpkgs.follows = "nixpkgs";
+    task-runner.inputs.flake-utils.follows = "flake-utils";
+
+    test-runner.url = "path:./servers/test-runner";
+    test-runner.inputs.nixpkgs.follows = "nixpkgs";
+    test-runner.inputs.flake-utils.follows = "flake-utils";
+
     # nix-mcp-proxy is still under construction (spec-kit phase 6 — tasks
     # generated, not implemented). When it ships a buildable package the
     # passthrough server under ./servers/nix-mcp-proxy will start re-exporting
@@ -19,12 +43,18 @@
     # nix-mcp-proxy.url = "github:mmmaxwwwell/nix-mcp-proxy";
   };
 
-  outputs = { self, nixpkgs, flake-utils, code-graph, ... }:
+  outputs = { self, nixpkgs, flake-utils, code-graph, git-guard, codebase, web-browser, web-search, task-runner, test-runner, ... }:
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = import nixpkgs { inherit system; };
 
         codeGraphPkg = code-graph.packages.${system}.code-review-graph;
+        mcpServerGit = git-guard.packages.${system}.mcp-server-git;
+        treeSitterMcp = codebase.packages.${system}.tree-sitter-mcp;
+        webBrowserSidecar = web-browser.packages.${system}.web-browser-sidecar;
+        webSearchPkg = web-search.packages.${system}.web-search;
+        shellMcpPkg = task-runner.packages.${system}.shell-mcp;
+        mcpTestRunner = test-runner.packages.${system}.mcp-test-runner;
 
         # claude-with-servers: wrapper script that starts all configured MCP
         # servers and launches claude with a merged .mcp.json.
@@ -56,6 +86,12 @@
           # Re-export the underlying server packages so consumers can pull
           # individual binaries without going through mkShellHook.
           code-review-graph = codeGraphPkg;
+          mcp-server-git = mcpServerGit;
+          tree-sitter-mcp = treeSitterMcp;
+          web-browser-sidecar = webBrowserSidecar;
+          inherit (web-search.packages.${system}) web-search;
+          shell-mcp = shellMcpPkg;
+          mcp-test-runner = mcpTestRunner;
           inherit claude-with-servers;
           default = claude-with-servers;
         };
@@ -69,7 +105,7 @@
         # flake without entering a consumer project.
         # claude-with-servers is included so you can test the launcher.
         devShells.default = pkgs.mkShell {
-          packages = [ codeGraphPkg claude-with-servers pkgs.git pkgs.jq ];
+          packages = [ codeGraphPkg mcpServerGit treeSitterMcp webBrowserSidecar webSearchPkg shellMcpPkg mcpTestRunner claude-with-servers pkgs.git pkgs.jq pkgs.uv ];
         };
       }
     );
