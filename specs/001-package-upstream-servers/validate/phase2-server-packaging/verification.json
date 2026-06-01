@@ -1,0 +1,208 @@
+{
+  "phase": "phase2-server-packaging",
+  "verifier_version": "1.0",
+  "timestamp": "2026-06-01T12:30:00Z",
+  "tasks_verified": [
+    {
+      "task_id": "T005",
+      "demand_summary": "Research mcp-server-git upstream: latest PyPI release, entry point, deps, stdio flags, MIT license. Record in README.",
+      "commands_run": [
+        {"command": "cat servers/git-guard/README.md | head -20", "exit_code": 0, "stdout_excerpt": "README exists with version, entry point, license info"}
+      ],
+      "artifacts_inspected": [
+        {"path": "servers/git-guard/README.md", "key_fields": {"exists": true, "has_version": true}}
+      ],
+      "verdict": "satisfied",
+      "evidence": "servers/git-guard/README.md exists with 71 lines documenting upstream mcp-server-git v2026.1.14, MIT license, entry point, deps.",
+      "lie_check": "Verified README contains actual upstream info (version 2026.1.14, PyPI source) not placeholder text. Cross-checked version against flake.nix pin."
+    },
+    {
+      "task_id": "T006",
+      "demand_summary": "Package mcp-server-git as servers/git-guard/flake.nix using buildPythonApplication. Pin to release + hash. Export packages.default and packages.mcp-server-git. Include meta.",
+      "commands_run": [
+        {"command": "bash tests/git-guard.sh", "exit_code": 0, "stdout_excerpt": "PASS: mcp-server-git found at /nix/store/3m3g7cy0c2hl4cmz8iksjn4h8wkvyjjx-mcp-server-git-2026.1.14/bin/mcp-server-git ... PASS: found 12 tools"}
+      ],
+      "artifacts_inspected": [
+        {"path": "servers/git-guard/flake.nix", "key_fields": {"builder": "buildPythonApplication", "version": "2026.1.14", "has_hash": true, "exports_default": true, "exports_named": true, "has_meta": true}}
+      ],
+      "verdict": "satisfied",
+      "evidence": "flake.nix uses buildPythonApplication, pins v2026.1.14 with sha256 hash, exports packages.default and packages.mcp-server-git, includes meta with description/homepage/license/mainProgram. Binary builds and responds to MCP protocol.",
+      "lie_check": "Re-ran tests/git-guard.sh — exit 0, binary at expected nix store path, 12 tools returned via JSON-RPC. Read flake.nix to verify buildPythonApplication (not buildPythonPackage or stub)."
+    },
+    {
+      "task_id": "T007",
+      "demand_summary": "Create tests/git-guard.sh using tests/lib.sh functions. Verify build, MCP initialize, and tools/list.",
+      "commands_run": [
+        {"command": "bash tests/git-guard.sh", "exit_code": 0, "stdout_excerpt": "PASS: mcp-server-git found ... PASS: initialize returned protocolVersion=2024-11-05 ... PASS: found 12 tools ... ALL PASSED"}
+      ],
+      "artifacts_inspected": [
+        {"path": "tests/git-guard.sh", "key_fields": {"sources_lib": true, "uses_smoke_test": true, "line_count": 13}}
+      ],
+      "verdict": "satisfied",
+      "evidence": "Test script sources lib.sh, calls mcp_smoke_test which runs all 3 levels. Exit code 0 on re-run.",
+      "lie_check": "Read the test script to confirm it calls real lib.sh functions (not hardcoded echo PASS). Re-ran it — real MCP protocol exchange occurs."
+    },
+    {
+      "task_id": "T008",
+      "demand_summary": "Wire git-guard into root flake.nix: add path input with follows, re-export package, add to devShell.",
+      "commands_run": [
+        {"command": "grep git-guard flake.nix", "exit_code": 0, "stdout_excerpt": "git-guard.url = \"path:./servers/git-guard\"; git-guard.inputs.nixpkgs.follows = \"nixpkgs\"; ..."}
+      ],
+      "artifacts_inspected": [
+        {"path": "flake.nix", "key_fields": {"has_git_guard_input": true, "has_follows": true, "re_exports_package": true, "in_devshell": true}}
+      ],
+      "verdict": "satisfied",
+      "evidence": "flake.nix lines 15-17: git-guard input with nixpkgs+flake-utils follows. Line 60: mcpServerGit binding. Line 99: re-exported as mcp-server-git. Line 120: included in devShells.default packages.",
+      "lie_check": "Read flake.nix directly and verified all 4 wiring points exist. Integration test confirms binary on PATH in devShell."
+    },
+    {
+      "task_id": "T009",
+      "demand_summary": "Add git-guard to claude-with-servers: auto-detect mcp-server-git binary, add MCP_TOOLBELT_GIT_GUARD env toggle, generate .mcp.json entry.",
+      "commands_run": [
+        {"command": "bash tests/integration.sh", "exit_code": 0, "stdout_excerpt": "mcp-server-git: mcp-server-git --repository ... PASS: config has 9 server(s)"}
+      ],
+      "artifacts_inspected": [
+        {"path": "scripts/claude-with-servers", "key_fields": {"has_git_guard_block": true, "env_toggle": "MCP_TOOLBELT_GIT_GUARD", "auto_detects_binary": true}}
+      ],
+      "verdict": "satisfied",
+      "evidence": "scripts/claude-with-servers lines 84-91: checks `command -v mcp-server-git`, respects MCP_TOOLBELT_GIT_GUARD env toggle (defaults to 1), generates .mcp.json entry with --repository arg. Integration test confirms entry present.",
+      "lie_check": "Read script to verify detection logic is real (command -v, not hardcoded). Integration test generates config in temp dir and parses JSON output."
+    },
+    {
+      "task_id": "T011",
+      "demand_summary": "Package tree-sitter-mcp as servers/codebase/flake.nix using buildNpmPackage. Pin to release + hash. Export packages. Include meta.",
+      "commands_run": [
+        {"command": "bash tests/codebase.sh", "exit_code": 0, "stdout_excerpt": "PASS: tree-sitter-mcp found at /nix/store/bjm6jwlgfmpng5qs354x5vv922lsrwcj-tree-sitter-mcp-2.8.2/bin/tree-sitter-mcp ... PASS: found 4 tools"}
+      ],
+      "artifacts_inspected": [
+        {"path": "servers/codebase/flake.nix", "key_fields": {"builder": "buildNpmPackage", "version": "2.8.2", "has_hash": true, "has_meta": true}}
+      ],
+      "verdict": "satisfied",
+      "evidence": "flake.nix uses buildNpmPackage, pins v2.8.2 from nendotools/tree-sitter-mcp, includes npmDepsHash, exports default + tree-sitter-mcp, meta present. Binary builds and returns 4 tools.",
+      "lie_check": "Re-ran test — real binary responds with protocolVersion and 4 tools over JSON-RPC."
+    },
+    {
+      "task_id": "T015",
+      "demand_summary": "Package fetcher-mcp as Nix derivation using buildNpmPackage. Wrap with PLAYWRIGHT_BROWSERS_PATH and PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1. Export packages.fetcher-mcp.",
+      "commands_run": [
+        {"command": "bash tests/web-browser.sh", "exit_code": 0, "stdout_excerpt": "PASS: upstream fetch returned markdown with expected marker"}
+      ],
+      "artifacts_inspected": [
+        {"path": "servers/web-browser/flake.nix", "key_fields": {"builder": "buildNpmPackage", "version": "0.3.9", "wrapped_with_playwright": true, "exports_fetcher_mcp": true}}
+      ],
+      "verdict": "satisfied",
+      "evidence": "flake.nix lines 22-40: fetcher-mcp-unwrapped uses buildNpmPackage. Lines 93-102: symlinkJoin wraps with PLAYWRIGHT_BROWSERS_PATH and PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD. Line 146: exports fetcher-mcp. Web-browser test proves fetcher-mcp actually fetches pages via Playwright.",
+      "lie_check": "Test fetches from a local HTTP fixture server and verifies specific marker text in response — proves Playwright browser actually loaded the page."
+    },
+    {
+      "task_id": "T015a",
+      "demand_summary": "Implement sidecar MCP server in servers/web-browser/sidecar/ with 4 added tools (search_cached, get_cached, list_cached, purge_cached), better-sqlite3, FTS5, WAL mode, proper schema.",
+      "commands_run": [
+        {"command": "bash tests/web-browser.sh", "exit_code": 0, "stdout_excerpt": "PASS: found 7 tools ... PASS: search_cached found the fetched page ... PASS: purge_cached removed the cached page"}
+      ],
+      "artifacts_inspected": [
+        {"path": "servers/web-browser/sidecar/src/db.ts", "key_fields": {"schema_correct": true, "fts5_triggers": true, "wal_mode": true, "xdg_cache": true}},
+        {"path": "servers/web-browser/sidecar/src/index.ts", "key_fields": {"four_tools": true, "forwards_upstream": true, "caches_on_success": true}},
+        {"path": "servers/web-browser/sidecar/package.json", "key_fields": {"better_sqlite3": true, "mcp_sdk": true, "node_22": true}}
+      ],
+      "verdict": "satisfied",
+      "evidence": "db.ts: schema matches spec exactly (pages table with id/url/title/fetched_at/markdown + pages_fts FTS5 with content/content_rowid + 3 sync triggers). WAL mode at line 31. XDG_CACHE_HOME path at line 6-8. INSERT OR REPLACE at line 74. index.ts: 4 sidecar tools defined (lines 21-88), upstream forwarding (lines 244-261), cache-on-success (lines 250-258). Test proves full round-trip.",
+      "lie_check": "Read both source files line-by-line. Verified better-sqlite3 is used (not a mock). Test exercises real SQLite: fetch→list_cached→search_cached→get_cached→purge_cached→verify-gone."
+    },
+    {
+      "task_id": "T016",
+      "demand_summary": "Create tests/web-browser.sh with sidecar contract tests: fetch→cache→search→get→purge round-trip. Temp XDG_CACHE_HOME.",
+      "commands_run": [
+        {"command": "bash tests/web-browser.sh", "exit_code": 0, "stdout_excerpt": "PASS: upstream fetch returned markdown with expected marker ... PASS: purge_cached removed the cached page ... ALL PASSED"}
+      ],
+      "artifacts_inspected": [
+        {"path": "tests/web-browser.sh", "key_fields": {"temp_xdg": true, "fixture_server": true, "all_4_contract_steps": true, "line_count": 181}}
+      ],
+      "verdict": "satisfied",
+      "evidence": "Test creates temp XDG_CACHE_HOME (line 16), starts local HTTP fixture (lines 35-54), runs all 4 contract steps via coproc sidecar session. Markers (xyzzymcptest9f3a) prove content flows through correctly. Cleanup on EXIT.",
+      "lie_check": "Read the full 181-line test. Verified it sends real JSON-RPC to a real sidecar process, not hardcoded responses. Re-ran test — all 12 assertions pass."
+    },
+    {
+      "task_id": "T019",
+      "demand_summary": "Package shell-mcp as servers/task-runner/flake.nix using buildRustPackage. Pin to release + cargoHash.",
+      "commands_run": [
+        {"command": "bash tests/task-runner.sh", "exit_code": 0, "stdout_excerpt": "PASS: shell-mcp found at /nix/store/qkzh99im0zmcc5x38fx4kb721mrnfqgv-shell-mcp-0.1.1/bin/shell-mcp ... PASS: found 2 tools"}
+      ],
+      "artifacts_inspected": [
+        {"path": "servers/task-runner/flake.nix", "key_fields": {"builder": "buildRustPackage", "version": "0.1.1", "has_cargo_lock": true, "has_meta": true}}
+      ],
+      "verdict": "satisfied",
+      "evidence": "flake.nix uses rustPlatform.buildRustPackage with cargoLock.lockFile. Pinned to v0.1.1 from devrelopers/shell-mcp. Binary responds with 2 tools.",
+      "lie_check": "Re-ran test — real binary at nix store path. Read flake.nix to confirm buildRustPackage (not buildNpmPackage or stub)."
+    },
+    {
+      "task_id": "T023",
+      "demand_summary": "Package mcp-test-runner as servers/test-runner/flake.nix. Pin to release + hash. Export packages.",
+      "commands_run": [
+        {"command": "bash tests/test-runner.sh", "exit_code": 0, "stdout_excerpt": "PASS: mcp-test-runner found at /nix/store/1fmhvbpjczpbai911zyrd13laf2cra1c-mcp-test-runner-0.2.0-unstable-2025-11-09/bin/mcp-test-runner ... PASS: found 1 tools"}
+      ],
+      "artifacts_inspected": [
+        {"path": "servers/test-runner/flake.nix", "key_fields": {"builder": "buildNpmPackage", "version": "0.2.0-unstable-2025-11-09", "custom_install": true, "has_meta": true}}
+      ],
+      "verdict": "satisfied",
+      "evidence": "flake.nix uses buildNpmPackage with custom installPhase (upstream lacks bin field). Pinned to commit 83c84ed. Binary responds with 1 tool.",
+      "lie_check": "Re-ran test. Read flake.nix — custom installPhase creates wrapper script pointing to built index.js."
+    },
+    {
+      "task_id": "T027",
+      "demand_summary": "Package semantic-edit-mcp as servers/edit-surface/flake.nix using appropriate builder. Pin to release + hash.",
+      "commands_run": [
+        {"command": "bash tests/edit-surface.sh", "exit_code": 0, "stdout_excerpt": "PASS: semantic-edit-mcp found ... PASS: found 4 tools"}
+      ],
+      "artifacts_inspected": [
+        {"path": "servers/edit-surface/flake.nix", "key_fields": {"builder": "buildRustPackage", "version": "0.2.1", "has_meta": true}}
+      ],
+      "verdict": "satisfied",
+      "evidence": "flake.nix uses rustPlatform.buildRustPackage, pins v0.2.1 from jbr/semantic-edit-mcp. Binary responds with 4 tools via 'serve' subcommand.",
+      "lie_check": "Re-ran test. Read flake.nix to confirm builder and pin."
+    },
+    {
+      "task_id": "T031",
+      "demand_summary": "Package sqlite-memory-mcp as servers/sqlite-store/flake.nix using appropriate builder. Pin to release + hash.",
+      "commands_run": [
+        {"command": "bash tests/sqlite-store.sh", "exit_code": 0, "stdout_excerpt": "PASS: sqlite-memory-mcp found ... PASS: found 9 tools"}
+      ],
+      "artifacts_inspected": [
+        {"path": "servers/sqlite-store/flake.nix", "key_fields": {"builder": "buildPythonApplication", "version": "3.12.0", "has_meta": true}}
+      ],
+      "verdict": "satisfied",
+      "evidence": "flake.nix uses buildPythonApplication, pins v3.12.0 from RMANOV/sqlite-memory-mcp. Binary responds with 9 tools.",
+      "lie_check": "Re-ran test. Read flake.nix to confirm buildPythonApplication and pin."
+    },
+    {
+      "task_id": "T013",
+      "demand_summary": "Wire codebase (tree-sitter-mcp) into root flake.nix + claude-with-servers.",
+      "commands_run": [
+        {"command": "bash tests/integration.sh", "exit_code": 0, "stdout_excerpt": "tree-sitter-mcp: tree-sitter-mcp --mcp --project-path ..."}
+      ],
+      "artifacts_inspected": [
+        {"path": "flake.nix", "key_fields": {"has_codebase_input": true, "re_exports": true, "in_devshell": true}},
+        {"path": "scripts/claude-with-servers", "key_fields": {"has_codebase_block": true, "env_toggle": "MCP_TOOLBELT_CODEBASE"}}
+      ],
+      "verdict": "satisfied",
+      "evidence": "Root flake.nix: codebase input at line 19 with follows, treeSitterMcp binding at line 61, re-exported at line 100, in devShell at line 120. claude-with-servers: lines 64-71 detect tree-sitter-mcp with MCP_TOOLBELT_CODEBASE toggle.",
+      "lie_check": "Integration test shows tree-sitter-mcp in output with correct --mcp --project-path args."
+    },
+    {
+      "task_id": "T033",
+      "demand_summary": "Wire sqlite-store into root flake.nix + claude-with-servers.",
+      "commands_run": [
+        {"command": "bash tests/integration.sh", "exit_code": 0, "stdout_excerpt": "sqlite-store: sqlite-memory-mcp"}
+      ],
+      "artifacts_inspected": [
+        {"path": "flake.nix", "key_fields": {"has_sqlite_store_input": true, "re_exports": true}},
+        {"path": "scripts/claude-with-servers", "key_fields": {"has_sqlite_store_block": true, "env_toggle": "MCP_TOOLBELT_SQLITE_STORE"}}
+      ],
+      "verdict": "satisfied",
+      "evidence": "Root flake.nix: sqlite-store input at lines 43-45 with follows, sqliteMemoryMcp binding, re-exported, in devShell. claude-with-servers: lines 144-151 with MCP_TOOLBELT_SQLITE_STORE toggle. Integration test shows sqlite-store entry.",
+      "lie_check": "Integration test output shows 'sqlite-store: sqlite-memory-mcp' — confirms correct wiring."
+    }
+  ],
+  "overall_verdict": "pass",
+  "blocking_failures": []
+}
