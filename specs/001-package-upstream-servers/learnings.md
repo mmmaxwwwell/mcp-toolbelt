@@ -146,3 +146,8 @@ Discoveries, gotchas, and decisions recorded by the implementation agent across 
 - **Not on PyPI** — must use `fetchFromGitHub`. The project uses `pyproject.toml` with setuptools but has never been published to the PyPI registry.
 - Only one required dependency: `fastmcp>=2.0.0`. All other deps (orjson, sqlite-vec, sentence-transformers, PyQt6) are optional extras — core functionality needs just `fastmcp` + stdlib `sqlite3`.
 - The package defines 15 console script entry points (micro-servers), but only `sqlite-memory-mcp` is needed for the primary MCP stdio server. The server name registered with MCP is `sqlite-kb`, not `sqlite-memory-mcp`.
+
+## T031 — sqlite-store flake.nix
+- `fastmcp 3.2.3` is available in nixpkgs (`python312Packages.fastmcp`) with `doCheck = false` already set — no override needed unlike the `mcp` package in git-guard.
+- Unlike git-guard (which uses `fetchPypi`), sqlite-memory-mcp is not on PyPI so `fetchFromGitHub` is required. The `pyproject.toml` uses `setuptools` backend (not `hatchling`), so `build-system = [ setuptools ]`.
+- The `pythonImportsCheck` must target `server` (the main module), not `sqlite_memory_mcp` — the package uses flat module layout with `py-modules` in `pyproject.toml`.
