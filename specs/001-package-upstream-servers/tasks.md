@@ -141,7 +141,7 @@ Done criteria:
 
 ### sqlite-store (sqlite-memory-mcp)
 
-- [ ] T030 [P] Research upstream `sqlite-memory-mcp`: determine language/build system, find latest release, identify entry point, check deps, determine stdio flags, verify license. Record in `servers/sqlite-store/README.md`. [FR-007]
+- [x] T030 [P] Research upstream `sqlite-memory-mcp`: determine language/build system, find latest release, identify entry point, check deps, determine stdio flags, verify license. Record in `servers/sqlite-store/README.md`. [FR-007]
 - [ ] T031 Package as `servers/sqlite-store/flake.nix` using appropriate builder. Pin to release + hash. Export packages. [FR-001, FR-002, FR-003, FR-004] [produces: IC-001, IC-002]
 - [ ] T032 Create `tests/sqlite-store.sh`. [FR-005, FR-006, FR-014, SC-002]
 - [ ] T033 Wire into root `flake.nix` + `claude-with-servers`. [FR-008, FR-009, FR-010, FR-011, FR-012, FR-013] [consumes: IC-001, IC-002, produces: IC-004]

@@ -141,3 +141,8 @@ Discoveries, gotchas, and decisions recorded by the implementation agent across 
 ## T029 — root flake wiring for edit-surface
 - Straightforward wiring following the established pattern. The `serve` subcommand (from T028) must be passed in the `claude-with-servers` args — same pattern as `tree-sitter-mcp` needing `--mcp`.
 - The edit-surface flake exports `packages.${system}.semantic-edit-mcp` (not `edit-surface`) — the Nix variable and package re-export must use `semantic-edit-mcp` as the attribute name.
+
+## T030 — sqlite-memory-mcp research
+- **Not on PyPI** — must use `fetchFromGitHub`. The project uses `pyproject.toml` with setuptools but has never been published to the PyPI registry.
+- Only one required dependency: `fastmcp>=2.0.0`. All other deps (orjson, sqlite-vec, sentence-transformers, PyQt6) are optional extras — core functionality needs just `fastmcp` + stdlib `sqlite3`.
+- The package defines 15 console script entry points (micro-servers), but only `sqlite-memory-mcp` is needed for the primary MCP stdio server. The server name registered with MCP is `sqlite-kb`, not `sqlite-memory-mcp`.
