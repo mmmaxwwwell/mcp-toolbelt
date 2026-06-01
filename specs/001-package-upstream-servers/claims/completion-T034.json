@@ -1,0 +1,15 @@
+{
+  "task_id": "T034",
+  "status": "complete",
+  "summary": "Verified root flake.nix builds all 7+1+1 server packages and devShell with no input follows or version conflicts",
+  "commands_run": [
+    {"command": "nix flake show", "exit_code": 0},
+    {"command": "nix build .#code-review-graph .#mcp-server-git .#tree-sitter-mcp .#web-browser-sidecar .#web-search .#shell-mcp .#mcp-test-runner .#semantic-edit-mcp .#sqlite-memory-mcp .#claude-with-servers", "exit_code": 0},
+    {"command": "nix build .#devShells.x86_64-linux.default", "exit_code": 0},
+    {"command": "nix flake metadata --json | jq '.locks.nodes | keys'", "exit_code": 0}
+  ],
+  "files_created": ["specs/001-package-upstream-servers/claims/completion-T034.json"],
+  "files_modified": ["specs/001-package-upstream-servers/learnings.md", "specs/001-package-upstream-servers/tasks.md"],
+  "screenshots": [],
+  "mcp_interactions": 0
+}

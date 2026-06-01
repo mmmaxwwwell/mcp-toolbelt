@@ -157,7 +157,7 @@ Done criteria:
 
 **Purpose**: Verify all servers work together and finalize docs.
 
-- [ ] T034 Verify root `flake.nix` builds with all 7 new server inputs. Fix any input follows or version conflicts. [FR-008, SC-003]
+- [x] T034 Verify root `flake.nix` builds with all 7 new server inputs. Fix any input follows or version conflicts. [FR-008, SC-003]
 - [ ] T035 Run `tests/integration.sh` with all servers on PATH. Verify `.mcp.json` contains all 7+1 (code-graph) servers. [SC-004]
 - [ ] T036 Test env var toggles: for each server, set `MCP_TOOLBELT_<NAME>=0` and verify it's absent from `.mcp.json`. [FR-013, SC-005]
 - [ ] T037 Update root `README.md`: change server catalog status from "planned"/"design only" to "packaged" for all 7 servers. [FR-007, SC-007]

@@ -4,17 +4,6 @@ Discoveries, gotchas, and decisions recorded by the implementation agent across 
 
 ---
 
-## T001 — tests/lib.sh
-- Functions accept extra args after binary name (e.g. `--stdio`, `--repository .`) via `shift` + `"$@"` — per-server tests can pass server-specific flags without modifying lib.sh.
-- `mcp_smoke_test` is a convenience wrapper running all 3 levels; per-server test scripts can call individual functions for finer control.
-
-## T002 — tests/integration.sh
-- `claude-with-servers` ends with `exec claude`, so tests need a stub `claude` on PATH (just `exit 0`) to test config generation without requiring the real Claude CLI.
-- The config file lands at `$MCP_TOOLBELT_PROJECT_DIR/.mcp-toolbelt/mcp.json`, not `.mcp.json` in the project root.
-
-## T003 — Makefile
-- `$(wildcard tests/*.sh)` returns empty when no test files exist yet; the Makefile explicitly checks for this and fails rather than silently succeeding with zero tests.
-
 ## T005 — mcp-server-git research
 - Version scheme switched from semver (0.x) to calver (YYYY.M.DD) at 2025.1.14. Latest PyPI release is 2026.1.14; pyproject.toml on GitHub still shows 0.6.2 — the monorepo CI overrides the version on publish.
 - Source lives in a monorepo at `src/git/` — Nix fetch needs `sourceRoot` or PyPI sdist.
@@ -159,3 +148,8 @@ Discoveries, gotchas, and decisions recorded by the implementation agent across 
 ## T033 — root flake wiring for sqlite-store
 - The pre-populated `claude-with-servers` entry used `--database $db` flag, which is not a valid CLI argument for `sqlite-memory-mcp`. The upstream uses `SQLITE_MEMORY_DB` env var for database path — not a CLI flag. Fixed to empty args `[]`, matching the T032 test pattern.
 - Same `follows` pattern as all prior servers: both `nixpkgs` and `flake-utils` must follow root inputs.
+
+## T034 — verify root flake.nix builds
+- All 7 new server inputs (git-guard, codebase, web-browser, web-search, task-runner, test-runner, edit-surface) plus sqlite-store build cleanly from the root flake — no code changes needed.
+- The `flake.lock` has no duplicate `nixpkgs`/`flake-utils` nodes, confirming all `follows` directives are working correctly.
+- Verification-only task: `nix flake show` + `nix build` for all 10 packages + devShell all exit 0.
