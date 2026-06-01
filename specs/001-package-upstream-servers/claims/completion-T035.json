@@ -1,0 +1,12 @@
+{
+  "task_id": "T035",
+  "status": "complete",
+  "summary": "Updated integration test to verify all 9 expected servers present in .mcp.json; test passes with all servers on PATH",
+  "commands_run": [
+    {"command": "NIX_REMOTE=daemon nix --extra-experimental-features 'nix-command flakes' develop --command bash tests/integration.sh", "exit_code": 0}
+  ],
+  "files_created": ["specs/001-package-upstream-servers/claims/completion-T035.json"],
+  "files_modified": ["tests/integration.sh", "specs/001-package-upstream-servers/tasks.md", "specs/001-package-upstream-servers/learnings.md"],
+  "screenshots": [],
+  "mcp_interactions": 0
+}

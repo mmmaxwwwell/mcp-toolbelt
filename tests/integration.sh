@@ -59,13 +59,38 @@ jq -e '.mcpServers' "$MCP_CONFIG" >/dev/null 2>&1 || {
 }
 echo "PASS: config has .mcpServers key"
 
-# Step 5: Verify at least one server was detected
+# Step 5: Verify all expected servers are present (7 new + code-graph + sqlite-store = 9)
+EXPECTED_SERVERS=(
+  code-review-graph
+  mcp-server-git
+  tree-sitter-mcp
+  web-browser
+  web-search
+  shell-mcp
+  semantic-edit-mcp
+  mcp-test-runner
+  sqlite-store
+)
 SERVER_COUNT=$(jq '.mcpServers | keys | length' "$MCP_CONFIG")
 if [ "$SERVER_COUNT" -lt 1 ]; then
   echo "FAIL: no servers in config (expected at least 1)"
   exit 1
 fi
 echo "PASS: config has $SERVER_COUNT server(s)"
+
+# Step 5b: Verify each expected server is present
+MISSING=()
+for srv in "${EXPECTED_SERVERS[@]}"; do
+  if ! jq -e --arg name "$srv" '.mcpServers[$name]' "$MCP_CONFIG" >/dev/null 2>&1; then
+    MISSING+=("$srv")
+  fi
+done
+if [ ${#MISSING[@]} -gt 0 ]; then
+  echo "FAIL: missing servers in .mcp.json: ${MISSING[*]}"
+  echo "Present: $(jq -r '.mcpServers | keys | join(", ")' "$MCP_CONFIG")"
+  exit 1
+fi
+echo "PASS: all ${#EXPECTED_SERVERS[@]} expected servers present"
 
 # Step 6: Verify each server entry has required fields (command + args)
 INVALID=$(jq -r '

@@ -153,3 +153,8 @@ Discoveries, gotchas, and decisions recorded by the implementation agent across 
 - All 7 new server inputs (git-guard, codebase, web-browser, web-search, task-runner, test-runner, edit-surface) plus sqlite-store build cleanly from the root flake — no code changes needed.
 - The `flake.lock` has no duplicate `nixpkgs`/`flake-utils` nodes, confirming all `follows` directives are working correctly.
 - Verification-only task: `nix flake show` + `nix build` for all 10 packages + devShell all exit 0.
+
+## T035 — integration test with all servers
+- The task says "7+1 (code-graph)" but there are actually 9 servers in the devShell: 8 new (git-guard, codebase, web-browser, web-search, task-runner, test-runner, edit-surface, sqlite-store) + code-graph. The `github-mcp-server` entry in `claude-with-servers` is not packaged by this project, so it doesn't appear.
+- The Nix-installed copy of `claude-with-servers` is used by the test (via PATH from devShell), not the local `scripts/claude-with-servers` source. Changes to the source require a Nix rebuild to be reflected.
+- The `.mcp.json` server keys don't always match binary names: e.g., `web-browser` key uses `web-browser-sidecar` binary, `sqlite-store` key uses `sqlite-memory-mcp` binary.
