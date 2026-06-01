@@ -1,0 +1,12 @@
+{
+  "task_id": "T036",
+  "status": "complete",
+  "summary": "Created tests/env-toggles.sh that tests all 9 MCP_TOOLBELT_<NAME>=0 env var toggles, verifying each server is absent from .mcp.json when disabled",
+  "commands_run": [
+    {"command": "bash tests/env-toggles.sh", "exit_code": 0}
+  ],
+  "files_created": ["tests/env-toggles.sh", "specs/001-package-upstream-servers/claims/completion-T036.json"],
+  "files_modified": ["specs/001-package-upstream-servers/tasks.md", "specs/001-package-upstream-servers/learnings.md"],
+  "screenshots": [],
+  "mcp_interactions": 0
+}

@@ -158,3 +158,7 @@ Discoveries, gotchas, and decisions recorded by the implementation agent across 
 - The task says "7+1 (code-graph)" but there are actually 9 servers in the devShell: 8 new (git-guard, codebase, web-browser, web-search, task-runner, test-runner, edit-surface, sqlite-store) + code-graph. The `github-mcp-server` entry in `claude-with-servers` is not packaged by this project, so it doesn't appear.
 - The Nix-installed copy of `claude-with-servers` is used by the test (via PATH from devShell), not the local `scripts/claude-with-servers` source. Changes to the source require a Nix rebuild to be reflected.
 - The `.mcp.json` server keys don't always match binary names: e.g., `web-browser` key uses `web-browser-sidecar` binary, `sqlite-store` key uses `sqlite-memory-mcp` binary.
+
+## T036 — env var toggle tests
+- The `env` command accepts `"${var}=0"` as a single argument to set env vars dynamically in bash — useful for iterating over a mapping of toggle names to server keys.
+- All 9 toggles (CODE_GRAPH, CODEBASE, WEB_BROWSER, GIT_GUARD, WEB_SEARCH, TASK_RUNNER, EDIT_SURFACE, TEST_RUNNER, SQLITE_STORE) work correctly; `github-mcp-server` is excluded since it's not packaged by this project.
