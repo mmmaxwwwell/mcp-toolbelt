@@ -177,7 +177,7 @@ Done criteria:
 
 **Purpose**: Automated build + test on push.
 
-- [ ] T039 Create `.github/workflows/ci.yml` with matrix build (one job per server) + test job. Use `cachix/install-nix-action`. [SC-001, SC-006]
+- [x] T039 Create `.github/workflows/ci.yml` with matrix build (one job per server) + test job. Use `cachix/install-nix-action`. [SC-001, SC-006]
 - [ ] T040 [P] Add Gitleaks pre-commit hook config (`.gitleaks.toml` or `.pre-commit-config.yaml`). [interview-notes: Tier 1 security]
 
 **Checkpoint**: CI runs on push, all servers build and test green.
