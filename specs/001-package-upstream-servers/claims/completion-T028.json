@@ -1,0 +1,13 @@
+{
+  "task_id": "T028",
+  "status": "complete",
+  "summary": "Created tests/edit-surface.sh — MCP smoke test for semantic-edit-mcp using 'serve' subcommand for stdio mode",
+  "commands_run": [
+    {"command": "nix build ./servers/edit-surface#semantic-edit-mcp --no-link --print-out-paths", "exit_code": 0},
+    {"command": "bash tests/edit-surface.sh (with binary on PATH)", "exit_code": 0}
+  ],
+  "files_created": ["tests/edit-surface.sh", "specs/001-package-upstream-servers/claims/completion-T028.json"],
+  "files_modified": ["specs/001-package-upstream-servers/tasks.md", "specs/001-package-upstream-servers/learnings.md"],
+  "screenshots": [],
+  "mcp_interactions": 0
+}
