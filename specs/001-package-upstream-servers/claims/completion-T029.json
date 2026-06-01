@@ -1,0 +1,12 @@
+{
+  "task_id": "T029",
+  "status": "complete",
+  "summary": "Wired edit-surface (semantic-edit-mcp) into root flake.nix and claude-with-servers script",
+  "commands_run": [
+    {"command": "nix flake show --no-write-lock-file", "exit_code": 0}
+  ],
+  "files_created": ["specs/001-package-upstream-servers/claims/completion-T029.json"],
+  "files_modified": ["flake.nix", "scripts/claude-with-servers", "specs/001-package-upstream-servers/tasks.md", "specs/001-package-upstream-servers/learnings.md"],
+  "screenshots": [],
+  "mcp_interactions": 0
+}

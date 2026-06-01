@@ -120,6 +120,16 @@ build_mcp_config() {
     }')
   fi
 
+  # edit-surface (semantic-edit-mcp): AST-aware code editing
+  if command -v semantic-edit-mcp &>/dev/null && [ "${MCP_TOOLBELT_EDIT_SURFACE:-1}" = "1" ]; then
+    servers=$(echo "$servers" | jq '. + {
+      "semantic-edit-mcp": {
+        "command": "semantic-edit-mcp",
+        "args": ["serve"]
+      }
+    }')
+  fi
+
   # test-runner: structured test execution
   if command -v mcp-test-runner &>/dev/null && [ "${MCP_TOOLBELT_TEST_RUNNER:-1}" = "1" ]; then
     servers=$(echo "$servers" | jq '. + {

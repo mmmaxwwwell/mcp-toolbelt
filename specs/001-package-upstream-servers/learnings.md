@@ -137,3 +137,7 @@ Discoveries, gotchas, and decisions recorded by the implementation agent across 
 ## T028 — tests/edit-surface.sh
 - `semantic-edit-mcp` requires the `serve` subcommand for MCP stdio mode — without it, it shows help text listing subcommands (preview-edit, retarget-edit, persist-edit, set-working-directory). The `--help` does not mention `serve` but it works.
 - The server exposes 4 tools (preview_edit, retarget_edit, persist_edit, set_working_directory).
+
+## T029 — root flake wiring for edit-surface
+- Straightforward wiring following the established pattern. The `serve` subcommand (from T028) must be passed in the `claude-with-servers` args — same pattern as `tree-sitter-mcp` needing `--mcp`.
+- The edit-surface flake exports `packages.${system}.semantic-edit-mcp` (not `edit-surface`) — the Nix variable and package re-export must use `semantic-edit-mcp` as the attribute name.

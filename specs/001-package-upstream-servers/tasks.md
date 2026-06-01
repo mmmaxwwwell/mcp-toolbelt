@@ -130,7 +130,7 @@ Done criteria:
 - [x] T026 [P] Research upstream `mcp-contextual-code-edit`: determine language/build system, find latest release, identify entry point, check deps, determine stdio flags, verify license. Record in `servers/edit-surface/README.md` (update existing). [FR-007]
 - [x] T027 Package as `servers/edit-surface/flake.nix` using appropriate builder. Pin to release + hash. Export packages. [FR-001, FR-002, FR-003, FR-004] [produces: IC-001, IC-002]
 - [x] T028 Create `tests/edit-surface.sh`. [FR-005, FR-006, FR-014, SC-002]
-- [ ] T029 Wire into root `flake.nix` + `claude-with-servers`. [FR-008, FR-009, FR-010, FR-011, FR-012, FR-013] [consumes: IC-001, IC-002, produces: IC-004]
+- [x] T029 Wire into root `flake.nix` + `claude-with-servers`. [FR-008, FR-009, FR-010, FR-011, FR-012, FR-013] [consumes: IC-001, IC-002, produces: IC-004]
 
 **Checkpoint**: Build, test, integrate.
 
