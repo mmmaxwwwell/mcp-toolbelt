@@ -38,6 +38,25 @@
       },
       "parent": []
     },
+    "edit-surface": {
+      "inputs": {
+        "flake-utils": [
+          "flake-utils"
+        ],
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "path": "./servers/edit-surface",
+        "type": "path"
+      },
+      "original": {
+        "path": "./servers/edit-surface",
+        "type": "path"
+      },
+      "parent": []
+    },
     "flake-utils": {
       "inputs": {
         "systems": "systems"
@@ -95,14 +114,35 @@
       "inputs": {
         "code-graph": "code-graph",
         "codebase": "codebase",
+        "edit-surface": "edit-surface",
         "flake-utils": "flake-utils",
         "git-guard": "git-guard",
         "nixpkgs": "nixpkgs",
+        "sqlite-store": "sqlite-store",
         "task-runner": "task-runner",
         "test-runner": "test-runner",
         "web-browser": "web-browser",
         "web-search": "web-search"
       }
+    },
+    "sqlite-store": {
+      "inputs": {
+        "flake-utils": [
+          "flake-utils"
+        ],
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "path": "./servers/sqlite-store",
+        "type": "path"
+      },
+      "original": {
+        "path": "./servers/sqlite-store",
+        "type": "path"
+      },
+      "parent": []
     },
     "systems": {
       "locked": {

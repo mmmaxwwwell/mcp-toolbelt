@@ -140,12 +140,12 @@ build_mcp_config() {
     }')
   fi
 
-  # sqlite-store: shared FTS5 storage
+  # sqlite-store (sqlite-memory-mcp): persistent knowledge graph with FTS5 search
   if command -v sqlite-memory-mcp &>/dev/null && [ "${MCP_TOOLBELT_SQLITE_STORE:-1}" = "1" ]; then
-    servers=$(echo "$servers" | jq --arg db "$STATE_DIR/store.db" '. + {
+    servers=$(echo "$servers" | jq '. + {
       "sqlite-store": {
         "command": "sqlite-memory-mcp",
-        "args": ["--database", $db]
+        "args": []
       }
     }')
   fi

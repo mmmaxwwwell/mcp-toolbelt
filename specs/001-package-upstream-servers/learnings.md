@@ -155,3 +155,7 @@ Discoveries, gotchas, and decisions recorded by the implementation agent across 
 ## T032 — tests/sqlite-store.sh
 - `sqlite-memory-mcp` needs no special flags for stdio MCP mode — simplest pattern like `mcp-test-runner`. Just `mcp_smoke_test "sqlite-memory-mcp"` with no extra args.
 - The server exposes 9 tools (knowledge-graph compatible: create_entities, add_observations, create_relations, delete_entities, delete_observations, delete_relations, read_graph, search_nodes, open_nodes).
+
+## T033 — root flake wiring for sqlite-store
+- The pre-populated `claude-with-servers` entry used `--database $db` flag, which is not a valid CLI argument for `sqlite-memory-mcp`. The upstream uses `SQLITE_MEMORY_DB` env var for database path — not a CLI flag. Fixed to empty args `[]`, matching the T032 test pattern.
+- Same `follows` pattern as all prior servers: both `nixpkgs` and `flake-utils` must follow root inputs.

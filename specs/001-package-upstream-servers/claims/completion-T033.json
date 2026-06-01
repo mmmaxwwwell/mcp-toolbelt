@@ -1,0 +1,13 @@
+{
+  "task_id": "T033",
+  "status": "complete",
+  "summary": "Wired sqlite-store into root flake.nix (input with follows, package binding, re-export, devShell) and fixed claude-with-servers entry (removed invalid --database flag)",
+  "commands_run": [
+    {"command": "nix build .#sqlite-memory-mcp --no-link --print-out-paths", "exit_code": 0},
+    {"command": "nix flake show", "exit_code": 0}
+  ],
+  "files_created": ["specs/001-package-upstream-servers/claims/completion-T033.json"],
+  "files_modified": ["flake.nix", "flake.lock", "scripts/claude-with-servers", "specs/001-package-upstream-servers/tasks.md", "specs/001-package-upstream-servers/learnings.md"],
+  "screenshots": [],
+  "mcp_interactions": 0
+}

@@ -40,6 +40,10 @@
     edit-surface.inputs.nixpkgs.follows = "nixpkgs";
     edit-surface.inputs.flake-utils.follows = "flake-utils";
 
+    sqlite-store.url = "path:./servers/sqlite-store";
+    sqlite-store.inputs.nixpkgs.follows = "nixpkgs";
+    sqlite-store.inputs.flake-utils.follows = "flake-utils";
+
     # nix-mcp-proxy is still under construction (spec-kit phase 6 — tasks
     # generated, not implemented). When it ships a buildable package the
     # passthrough server under ./servers/nix-mcp-proxy will start re-exporting
@@ -47,7 +51,7 @@
     # nix-mcp-proxy.url = "github:mmmaxwwwell/nix-mcp-proxy";
   };
 
-  outputs = { self, nixpkgs, flake-utils, code-graph, git-guard, codebase, web-browser, web-search, task-runner, test-runner, edit-surface, ... }:
+  outputs = { self, nixpkgs, flake-utils, code-graph, git-guard, codebase, web-browser, web-search, task-runner, test-runner, edit-surface, sqlite-store, ... }:
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = import nixpkgs { inherit system; };
@@ -60,6 +64,7 @@
         shellMcpPkg = task-runner.packages.${system}.shell-mcp;
         mcpTestRunner = test-runner.packages.${system}.mcp-test-runner;
         semanticEditMcp = edit-surface.packages.${system}.semantic-edit-mcp;
+        sqliteMemoryMcp = sqlite-store.packages.${system}.sqlite-memory-mcp;
 
         # claude-with-servers: wrapper script that starts all configured MCP
         # servers and launches claude with a merged .mcp.json.
@@ -98,6 +103,7 @@
           shell-mcp = shellMcpPkg;
           mcp-test-runner = mcpTestRunner;
           semantic-edit-mcp = semanticEditMcp;
+          sqlite-memory-mcp = sqliteMemoryMcp;
           inherit claude-with-servers;
           default = claude-with-servers;
         };
@@ -111,7 +117,7 @@
         # flake without entering a consumer project.
         # claude-with-servers is included so you can test the launcher.
         devShells.default = pkgs.mkShell {
-          packages = [ codeGraphPkg mcpServerGit treeSitterMcp webBrowserSidecar webSearchPkg shellMcpPkg mcpTestRunner semanticEditMcp claude-with-servers pkgs.git pkgs.jq pkgs.uv ];
+          packages = [ codeGraphPkg mcpServerGit treeSitterMcp webBrowserSidecar webSearchPkg shellMcpPkg mcpTestRunner semanticEditMcp sqliteMemoryMcp claude-with-servers pkgs.git pkgs.jq pkgs.uv ];
         };
       }
     );
