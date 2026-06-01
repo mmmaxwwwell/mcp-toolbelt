@@ -1,0 +1,12 @@
+{
+  "task_id": "T038",
+  "status": "complete",
+  "summary": "Ran `make check` — all 10 test scripts passed (codebase, edit-surface, env-toggles, git-guard, integration, lib, sqlite-store, task-runner, test-runner, web-browser, web-search)",
+  "commands_run": [
+    {"command": "make check", "exit_code": 0}
+  ],
+  "files_created": ["specs/001-package-upstream-servers/claims/completion-T038.json"],
+  "files_modified": ["specs/001-package-upstream-servers/tasks.md"],
+  "screenshots": [],
+  "mcp_interactions": 0
+}
