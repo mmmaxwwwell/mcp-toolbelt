@@ -162,3 +162,7 @@ Discoveries, gotchas, and decisions recorded by the implementation agent across 
 ## T036 — env var toggle tests
 - The `env` command accepts `"${var}=0"` as a single argument to set env vars dynamically in bash — useful for iterating over a mapping of toggle names to server keys.
 - All 9 toggles (CODE_GRAPH, CODEBASE, WEB_BROWSER, GIT_GUARD, WEB_SEARCH, TASK_RUNNER, EDIT_SURFACE, TEST_RUNNER, SQLITE_STORE) work correctly; `github-mcp-server` is excluded since it's not packaged by this project.
+
+## T037 — README server catalog update
+- The task says "7 servers" but 8 were actually packaged (7 new inputs + sqlite-store). The README catalog was also missing `codebase` and `task-runner` rows entirely — they needed to be added, not just status-updated.
+- The previously "planned" entries (`git-guard`, `test-runner`, `sqlite-store`) had no hyperlinks to their server directories — added `[name](servers/name/)` links for consistency with existing entries.

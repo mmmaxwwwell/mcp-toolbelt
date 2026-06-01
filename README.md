@@ -36,17 +36,19 @@ with all servers configured.
 | Server | Status | Slot |
 |--------|--------|------|
 | [`code-graph`](servers/code-graph/) | working | Persistent knowledge graph of your codebase |
+| [`codebase`](servers/codebase/) | packaged | Tree-sitter-based code intelligence via [tree-sitter-mcp](https://github.com/nicobailon/tree-sitter-mcp) |
 | [`nix-mcp-proxy`](servers/nix-mcp-proxy/) | in development | Proxy middleware for all servers |
-| [`edit-surface`](servers/edit-surface/) | design only | Graph-routed structured edits (TS/Python/Go/Nix) |
+| [`edit-surface`](servers/edit-surface/) | packaged | Graph-routed structured edits (TS/Python/Go/Nix) |
 | [`fs-fallback`](servers/fs-fallback/) | design only | ACL-gated raw read/write for non-code files |
 | [`pnpm-wrapper`](servers/pnpm-wrapper/) | design only | Fixed-verb pnpm wrapper with structured output |
 | [`nix-dev-exec`](servers/nix-dev-exec/) | design only | Registered operations run inside `nix develop -c` |
 | [`docs-fetcher`](servers/docs-fetcher/) | design only | Version-pinned dependency documentation |
-| [`web-browser`](servers/web-browser/) | design only | Sidecar wrapping [fetcher-mcp](https://github.com/jae-jae/fetcher-mcp); writes extracted markdown to a user-global SQLite FTS5 index for cross-page search |
-| [`web-search`](servers/web-search/) | design only | DuckDuckGo search via [pskill9/web-search](https://github.com/pskill9/web-search); Tavily/Exa opt-in |
-| `git-guard` | planned | Scoped, audited git operations |
-| `test-runner` | planned | Structured test execution |
-| `sqlite-store` | planned | Shared FTS5 storage backend |
+| [`web-browser`](servers/web-browser/) | packaged | Sidecar wrapping [fetcher-mcp](https://github.com/jae-jae/fetcher-mcp); writes extracted markdown to a user-global SQLite FTS5 index for cross-page search |
+| [`web-search`](servers/web-search/) | packaged | DuckDuckGo search via [pskill9/web-search](https://github.com/pskill9/web-search); Tavily/Exa opt-in |
+| [`git-guard`](servers/git-guard/) | packaged | Scoped, audited git operations |
+| [`test-runner`](servers/test-runner/) | packaged | Structured test execution |
+| [`sqlite-store`](servers/sqlite-store/) | packaged | Shared FTS5 storage backend |
+| [`task-runner`](servers/task-runner/) | packaged | Shell command execution via [shell-mcp](https://github.com/devrelopers/shell-mcp) |
 
 See [`DESIGN.md`](DESIGN.md) for the full architecture, token efficiency
 strategy, and storage design.

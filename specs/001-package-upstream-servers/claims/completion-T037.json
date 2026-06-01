@@ -1,0 +1,12 @@
+{
+  "task_id": "T037",
+  "status": "complete",
+  "summary": "Updated README.md server catalog: changed 6 existing rows from planned/design-only to packaged, added 2 new rows (codebase, task-runner), added hyperlinks to server directories for previously unlinked entries",
+  "commands_run": [
+    {"command": "git diff", "exit_code": 0}
+  ],
+  "files_created": ["specs/001-package-upstream-servers/claims/completion-T037.json"],
+  "files_modified": ["README.md", "specs/001-package-upstream-servers/tasks.md"],
+  "screenshots": [],
+  "mcp_interactions": 0
+}
