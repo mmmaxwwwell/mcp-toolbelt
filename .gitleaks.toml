@@ -1,0 +1,25 @@
+# Gitleaks configuration for mcp-toolbelt
+# Extends the default ruleset with additional patterns for secret detection.
+# Used by the pre-commit hook and CI pipeline.
+
+[extend]
+# Use the default gitleaks rules as a base
+useDefault = true
+
+[[rules]]
+id = "stripe-live-secret-key"
+description = "Stripe live secret key"
+regex = '''sk_live_[0-9a-zA-Z]{24,}'''
+keywords = ["sk_live_"]
+
+[[rules]]
+id = "stripe-live-restricted-key"
+description = "Stripe live restricted key"
+regex = '''rk_live_[0-9a-zA-Z]{24,}'''
+keywords = ["rk_live_"]
+
+[allowlist]
+paths = [
+    '''\.gitleaks\.toml$''',
+    '''logs/''',
+]

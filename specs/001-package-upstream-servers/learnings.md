@@ -26,3 +26,7 @@ Discoveries, gotchas, and decisions recorded by the implementation agent across 
 - The root flake exports 10 packages (9 servers + `claude-with-servers`). The matrix build covers all 10 to catch per-server build regressions independently.
 - `cachix/install-nix-action@v31` is the latest stable version; `extra_nix_config` enables `nix-command flakes` experimental features needed for `nix build .#pkg` syntax.
 - The test job uses `nix develop --command make check` (single invocation, acceptable in CI despite the "don't use nix develop --command repeatedly" rule which targets multiple sequential calls).
+
+## T040 — Gitleaks pre-commit hook config
+- Gitleaks `useDefault = true` already includes a `stripe-access-token` rule that catches `sk_live_` patterns; the custom `stripe-live-secret-key` rule provides an explicit, keyword-indexed match for faster scans.
+- The `logs/` directory must be allowlisted — agent session logs contain example secret patterns from prompt templates, triggering false positives.

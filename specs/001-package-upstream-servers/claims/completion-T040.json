@@ -1,0 +1,13 @@
+{
+  "task_id": "T040",
+  "status": "complete",
+  "summary": "Added .gitleaks.toml with sk_live_ pattern rules and .pre-commit-config.yaml wiring gitleaks v8.21.2 as a pre-commit hook",
+  "commands_run": [
+    {"command": "gitleaks detect --no-git --config .gitleaks.toml --source /tmp/gitleaks-test", "exit_code": 1},
+    {"command": "gitleaks detect --no-git --config .gitleaks.toml --source /home/max/git/mcp-toolbelt", "exit_code": 0}
+  ],
+  "files_created": [".gitleaks.toml", ".pre-commit-config.yaml"],
+  "files_modified": ["specs/001-package-upstream-servers/tasks.md", "specs/001-package-upstream-servers/learnings.md"],
+  "screenshots": [],
+  "mcp_interactions": 0
+}
