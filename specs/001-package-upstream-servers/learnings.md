@@ -151,3 +151,7 @@ Discoveries, gotchas, and decisions recorded by the implementation agent across 
 - `fastmcp 3.2.3` is available in nixpkgs (`python312Packages.fastmcp`) with `doCheck = false` already set — no override needed unlike the `mcp` package in git-guard.
 - Unlike git-guard (which uses `fetchPypi`), sqlite-memory-mcp is not on PyPI so `fetchFromGitHub` is required. The `pyproject.toml` uses `setuptools` backend (not `hatchling`), so `build-system = [ setuptools ]`.
 - The `pythonImportsCheck` must target `server` (the main module), not `sqlite_memory_mcp` — the package uses flat module layout with `py-modules` in `pyproject.toml`.
+
+## T032 — tests/sqlite-store.sh
+- `sqlite-memory-mcp` needs no special flags for stdio MCP mode — simplest pattern like `mcp-test-runner`. Just `mcp_smoke_test "sqlite-memory-mcp"` with no extra args.
+- The server exposes 9 tools (knowledge-graph compatible: create_entities, add_observations, create_relations, delete_entities, delete_observations, delete_relations, read_graph, search_nodes, open_nodes).

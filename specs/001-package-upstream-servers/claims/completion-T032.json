@@ -1,0 +1,16 @@
+{
+  "task_id": "T032",
+  "status": "complete",
+  "summary": "Created tests/sqlite-store.sh with MCP smoke tests (build, initialize, tools/list) for sqlite-memory-mcp",
+  "commands_run": [
+    {"command": "nix build ./servers/sqlite-store#sqlite-memory-mcp --no-link --print-out-paths", "exit_code": 0},
+    {"command": "PATH=$STORE_PATH/bin:$PATH bash tests/sqlite-store.sh", "exit_code": 0}
+  ],
+  "files_created": ["tests/sqlite-store.sh"],
+  "files_modified": [
+    "specs/001-package-upstream-servers/tasks.md",
+    "specs/001-package-upstream-servers/learnings.md"
+  ],
+  "screenshots": [],
+  "mcp_interactions": 0
+}
