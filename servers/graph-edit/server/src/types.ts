@@ -125,6 +125,44 @@ export interface PolicyConfig {
   type_check: { strict: boolean };
 }
 
+// Phase 4 amendment (Agent 4C): result shape for describe_change_zone.
+// Additive — no existing type modified. Callers hint at signature-change
+// blast radius; type_alias_refs / mocking_tests / reexports enable
+// pre-edit safety checks that primitives can't cheaply compose.
+export interface DescribeChangeZoneResult {
+  target: {
+    id: SymbolId;
+    kind: SymbolKind;
+    name: string;
+    module: ModulePath;
+    signature: string;
+  };
+  callers: Array<{
+    caller_id: SymbolId | null;
+    file: ModulePath;
+    line: number;
+    context_line: string;
+    kind_of_break_if_signature_changes: "signature_arity" | "return_type" | "unknown";
+  }>;
+  type_alias_refs: Array<{
+    id: SymbolId;
+    kind: "type" | "interface";
+    name: string;
+    module: ModulePath;
+  }>;
+  mocking_tests: Array<{
+    file: ModulePath;
+    line: number;
+    snippet: string;
+  }>;
+  reexports: Array<{
+    from_module: ModulePath;
+    statement: string;
+  }>;
+  is_public_api: boolean;
+  is_public_api_reasoning: string;
+}
+
 // Backend interface (implemented per language)
 export interface Backend {
   name: string;

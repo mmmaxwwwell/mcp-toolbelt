@@ -24,6 +24,9 @@ import { handleCommit } from "./commit.js";
 import { handleDiscard } from "./discard.js";
 import { handleResetSession } from "./reset-session.js";
 import { handleSessionSummary } from "./session-summary.js";
+import { handleOpenSymbol } from "./open-symbol.js";
+import { handleSimilarTo } from "./similar-to.js";
+import { handleDescribeChangeZone } from "./describe-change-zone.js";
 
 type Args = Record<string, unknown>;
 
@@ -155,12 +158,15 @@ export const stubHandlers: Record<string, (session: Session, args: Args) => Prom
   session_summary: async (s) => handleSessionSummary(s),
 
   // Bundled
-  open_symbol: async (s, a) => s.openSymbol(str(a, "id_or_query")),
+  open_symbol: async (s, a) => handleOpenSymbol(s, { id_or_query: str(a, "id_or_query") }),
   explore: async (s, a) => s.explore(str(a, "intent"), strOpt(a, "target")),
-  describe_change_zone: async (s, a) => s.describeChangeZone(str(a, "id") as SymbolId),
+  describe_change_zone: async (s, a) => handleDescribeChangeZone(s, str(a, "id") as SymbolId),
   similar_to: async (s, a) => {
     const k = a.k;
-    return s.similarTo(str(a, "id") as SymbolId, typeof k === "number" ? k : undefined);
+    return handleSimilarTo(s, {
+      id: str(a, "id") as SymbolId,
+      k: typeof k === "number" ? k : undefined,
+    });
   },
   find: async (s, a) => {
     const mode = strOpt(a, "mode") as "name" | "concept" | "usage" | "auto" | undefined;

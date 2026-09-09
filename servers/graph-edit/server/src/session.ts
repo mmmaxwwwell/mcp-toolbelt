@@ -344,8 +344,9 @@ export class Session {
     throw new NotImplementedError("open_symbol");
   }
 
-  async explore(_intent: string, _target?: string): Promise<unknown> {
-    throw new NotImplementedError("explore");
+  async explore(intent: string, target?: string): Promise<unknown> {
+    const { handleExplore } = await import("./tools/explore.js");
+    return handleExplore(this, { intent, target });
   }
 
   async describeChangeZone(_id: SymbolId): Promise<unknown> {

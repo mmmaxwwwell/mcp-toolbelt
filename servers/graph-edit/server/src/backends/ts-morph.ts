@@ -13,6 +13,7 @@ import type {
   SymbolRecord,
 } from "../types.js";
 import { RefusalError } from "../errors.js";
+import { TsMorphBundledBackend } from "./ts-morph-bundled.js";
 import { TsMorphReadBackend } from "./ts-morph-read.js";
 import { TsMorphSessionBackend } from "./ts-morph-session.js";
 import { TsMorphWriteBackend } from "./ts-morph-write.js";
@@ -36,6 +37,7 @@ export class TsMorphBackend implements Backend {
   readonly read = new TsMorphReadBackend();
   readonly write = new TsMorphWriteBackend(this.read);
   readonly session = new TsMorphSessionBackend(this.read);
+  readonly bundled = new TsMorphBundledBackend(this.read);
 
   async load(root: ProjectRoot, policy: PolicyConfig): Promise<void> {
     await this.read.load(root, policy);
@@ -127,14 +129,13 @@ export class TsMorphBackend implements Backend {
     this.session.discard([]);
   }
 
-  openSymbol(_idOrQuery: string): Promise<unknown> {
-    // Phase 4 owns these; return NotImplemented placeholder.
-    return Promise.reject(new Error("open_symbol not implemented in v1 phase 3"));
+  openSymbol(idOrQuery: string): Promise<unknown> {
+    return this.bundled.openSymbol(idOrQuery);
   }
   describeChangeZone(_id: SymbolId): Promise<unknown> {
     return Promise.reject(new Error("describe_change_zone not implemented in v1 phase 3"));
   }
-  similarTo(_id: SymbolId, _k?: number): Promise<unknown> {
-    return Promise.reject(new Error("similar_to not implemented in v1 phase 3"));
+  similarTo(id: SymbolId, k?: number): Promise<unknown> {
+    return this.bundled.similarTo(id, k);
   }
 }
