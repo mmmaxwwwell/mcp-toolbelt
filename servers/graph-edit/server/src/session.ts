@@ -6,6 +6,7 @@ import type {
   CommitResult,
   ModulePath,
   MutationResponse,
+  PendingMutation,
   PolicyConfig,
   PreviewResult,
   ProjectRoot,
@@ -123,16 +124,19 @@ export class Session {
   }
 
   // ---- Write structural ----
-  async createSymbol(_args: unknown): Promise<MutationResponse> {
-    throw new NotImplementedError("create_symbol");
+  async createSymbol(args: unknown): Promise<PendingMutation> {
+    await this.ensureLoaded();
+    return this.backend.createSymbol(args);
   }
 
-  async addMethod(_args: unknown): Promise<MutationResponse> {
-    throw new NotImplementedError("add_method");
+  async addMethod(args: unknown): Promise<PendingMutation> {
+    await this.ensureLoaded();
+    return this.backend.addMethod(args);
   }
 
-  async addProperty(_args: unknown): Promise<MutationResponse> {
-    throw new NotImplementedError("add_property");
+  async addProperty(args: unknown): Promise<PendingMutation> {
+    await this.ensureLoaded();
+    return this.backend.addProperty(args);
   }
 
   async editSymbolBody(_id: SymbolId, _body: string): Promise<MutationResponse> {

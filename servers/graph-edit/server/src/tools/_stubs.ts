@@ -1,11 +1,23 @@
 import { NotImplementedError } from "../errors.js";
 import type { Session } from "../session.js";
 import type { ModulePath, SymbolId, SymbolKind } from "../types.js";
+import { handleAddMethod } from "./add-method.js";
+import { handleAddProperty } from "./add-property.js";
+import { handleCreateSymbol } from "./create-symbol.js";
 import { handleGetReferences } from "./get-references.js";
 import { handleListSymbols } from "./list-symbols.js";
 import { handleGetSymbol } from "./get-symbol.js";
 import { handleListModules } from "./list-modules.js";
 import { handleDescribeModule } from "./describe-module.js";
+import { handleEditSymbolBody } from "./edit-symbol-body.js";
+import { handleEditSymbolSignature } from "./edit-symbol-signature.js";
+import { handleAddImport } from "./add-import.js";
+import { handleAddExport } from "./add-export.js";
+import { handleAddDecorator } from "./add-decorator.js";
+import { handleSetDocComment } from "./set-doc-comment.js";
+import { handleRenameSymbol } from "./rename-symbol.js";
+import { handleMoveSymbol } from "./move-symbol.js";
+import { handleDeleteSymbol, type RefactorCallers } from "./delete-symbol.js";
 
 type Args = Record<string, unknown>;
 
@@ -50,30 +62,82 @@ export const stubHandlers: Record<string, (session: Session, args: Args) => Prom
   describe_module: async (s, a) => handleDescribeModule(s, { path: str(a, "path") as ModulePath }),
 
   // Write — structural
-  create_symbol: async (s, a) => s.createSymbol(a),
-  add_method: async (s, a) => s.addMethod(a),
-  add_property: async (s, a) => s.addProperty(a),
-  edit_symbol_body: async (s, a) => s.editSymbolBody(str(a, "id") as SymbolId, str(a, "body")),
+  create_symbol: async (s, a) =>
+    handleCreateSymbol(s, {
+      kind: str(a, "kind"),
+      name: str(a, "name"),
+      module: strOpt(a, "module"),
+      signature: str(a, "signature"),
+      body: strOpt(a, "body"),
+      doc: strOpt(a, "doc"),
+    }),
+  add_method: async (s, a) =>
+    handleAddMethod(s, {
+      class_id: str(a, "class_id") as SymbolId,
+      name: str(a, "name"),
+      signature: str(a, "signature"),
+      body: str(a, "body"),
+      visibility: strOpt(a, "visibility") as "public" | "private" | "protected" | undefined,
+      static: boolOpt(a, "static"),
+    }),
+  add_property: async (s, a) =>
+    handleAddProperty(s, {
+      class_id: str(a, "class_id") as SymbolId,
+      name: str(a, "name"),
+      type: str(a, "type"),
+      initializer: strOpt(a, "initializer"),
+      visibility: strOpt(a, "visibility") as "public" | "private" | "protected" | undefined,
+      readonly: boolOpt(a, "readonly"),
+    }),
+  edit_symbol_body: async (s, a) =>
+    handleEditSymbolBody(s, { id: str(a, "id") as SymbolId, body: str(a, "body") }),
   edit_symbol_signature: async (s, a) =>
-    s.editSymbolSignature(str(a, "id") as SymbolId, str(a, "signature")),
-  rename_symbol: async (s, a) => s.renameSymbol(str(a, "id") as SymbolId, str(a, "new_name")),
+    handleEditSymbolSignature(s, {
+      id: str(a, "id") as SymbolId,
+      signature: str(a, "signature"),
+    }),
+  rename_symbol: async (s, a) =>
+    handleRenameSymbol(s, {
+      id: str(a, "id") as SymbolId,
+      new_name: str(a, "new_name"),
+    }),
   move_symbol: async (s, a) =>
-    s.moveSymbol(str(a, "id") as SymbolId, str(a, "target_module") as ModulePath),
-  delete_symbol: async (s, a) => {
-    const refactor = (strOpt(a, "refactor_callers") ?? "refuse") as
-      | "refuse"
-      | "inline_last_use"
-      | "leave_broken";
-    return s.deleteSymbol(str(a, "id") as SymbolId, refactor);
-  },
+    handleMoveSymbol(s, {
+      id: str(a, "id") as SymbolId,
+      target_module: str(a, "target_module") as ModulePath,
+    }),
+  delete_symbol: async (s, a) =>
+    handleDeleteSymbol(s, {
+      id: str(a, "id") as SymbolId,
+      refactor_callers: (strOpt(a, "refactor_callers") ?? undefined) as
+        | RefactorCallers
+        | undefined,
+    }),
 
   // Write — supporting
-  add_import: async (s, a) => s.addImport(a),
-  add_export: async (s, a) => s.addExport(a),
+  add_import: async (s, a) => {
+    const importsArr = Array.isArray(a.imports) ? (a.imports as Array<{ name: string; alias?: string }>) : [];
+    return handleAddImport(s, {
+      target_module: strOpt(a, "target_module"),
+      module_path: str(a, "module_path"),
+      imports: importsArr,
+    });
+  },
+  add_export: async (s, a) =>
+    handleAddExport(s, {
+      id: str(a, "id") as SymbolId,
+      from_module: strOpt(a, "from_module"),
+    }),
   add_decorator: async (s, a) =>
-    s.addDecorator(str(a, "id") as SymbolId, str(a, "decorator_source")),
+    handleAddDecorator(s, {
+      id: str(a, "id") as SymbolId,
+      decorator_source: str(a, "decorator_source"),
+    }),
   set_doc_comment: async (s, a) =>
-    s.setDocComment(str(a, "id") as SymbolId, str(a, "jsdoc_source")),
+    handleSetDocComment(s, {
+      id: str(a, "id") as SymbolId,
+      jsdoc_source: str(a, "jsdoc_source"),
+    }),
 
   // Session
   preview: async (s) => s.preview(),

@@ -12,16 +12,29 @@ import type {
   SymbolKind,
   SymbolRecord,
 } from "../types.js";
+import { RefusalError } from "../errors.js";
 import { TsMorphReadBackend } from "./ts-morph-read.js";
 import { TsMorphSessionBackend } from "./ts-morph-session.js";
 import { TsMorphWriteBackend } from "./ts-morph-write.js";
+import type { MoveResult } from "./ts-morph-move.js";
+
+function unwrapMove(result: MoveResult): PendingMutation {
+  // The Backend interface returns PendingMutation. Refusals from
+  // rename/move/delete are first-class response shapes; consumers that go
+  // through the Backend interface (rather than the tool handler) get a
+  // RefusalError. Tool handlers call the move module directly and preserve
+  // the { data: null, warnings } envelope.
+  if (result.mutation) return result.mutation;
+  const w = result.warnings[0];
+  throw new RefusalError(w?.kind ?? "refused", w?.message);
+}
 
 export class TsMorphBackend implements Backend {
   readonly name = "ts-morph";
   readonly extensions = [".ts", ".tsx", ".js", ".jsx"];
 
   readonly read = new TsMorphReadBackend();
-  readonly write = new TsMorphWriteBackend();
+  readonly write = new TsMorphWriteBackend(this.read);
   readonly session = new TsMorphSessionBackend();
 
   async load(root: ProjectRoot, policy: PolicyConfig): Promise<void> {
@@ -69,17 +82,17 @@ export class TsMorphBackend implements Backend {
   editSymbolSignature(id: SymbolId, signature: string): Promise<PendingMutation> {
     return this.write.editSymbolSignature(id, signature);
   }
-  renameSymbol(id: SymbolId, newName: string): Promise<PendingMutation> {
-    return this.write.renameSymbol(id, newName);
+  async renameSymbol(id: SymbolId, newName: string): Promise<PendingMutation> {
+    return unwrapMove(await this.write.renameSymbol(id, newName));
   }
-  moveSymbol(id: SymbolId, target: ModulePath): Promise<PendingMutation> {
-    return this.write.moveSymbol(id, target);
+  async moveSymbol(id: SymbolId, target: ModulePath): Promise<PendingMutation> {
+    return unwrapMove(await this.write.moveSymbol(id, target));
   }
-  deleteSymbol(
+  async deleteSymbol(
     id: SymbolId,
     refactorCallers: "refuse" | "inline_last_use" | "leave_broken"
   ): Promise<PendingMutation> {
-    return this.write.deleteSymbol(id, refactorCallers);
+    return unwrapMove(await this.write.deleteSymbol(id, refactorCallers));
   }
   addImport(args: unknown): Promise<PendingMutation> {
     return this.write.addImport(args);
