@@ -1,6 +1,11 @@
 import { NotImplementedError } from "../errors.js";
 import type { Session } from "../session.js";
 import type { ModulePath, SymbolId, SymbolKind } from "../types.js";
+import { handleGetReferences } from "./get-references.js";
+import { handleListSymbols } from "./list-symbols.js";
+import { handleGetSymbol } from "./get-symbol.js";
+import { handleListModules } from "./list-modules.js";
+import { handleDescribeModule } from "./describe-module.js";
 
 type Args = Record<string, unknown>;
 
@@ -34,11 +39,15 @@ function kindsOpt(args: Args, key: string): SymbolKind[] | undefined {
 export const stubHandlers: Record<string, (session: Session, args: Args) => Promise<unknown>> = {
   // Read
   list_symbols: async (s, a) =>
-    s.listSymbols(strOpt(a, "query"), kindsOpt(a, "kind") ?? kindsOpt(a, "kinds"), strOpt(a, "module") ?? strOpt(a, "scope")),
-  get_symbol: async (s, a) => s.getSymbol(str(a, "id") as SymbolId),
-  get_references: async (s, a) => s.getReferences(str(a, "id") as SymbolId),
-  list_modules: async (s, a) => s.listModules(strOpt(a, "pattern")),
-  describe_module: async (s, a) => s.describeModule(str(a, "path") as ModulePath),
+    handleListSymbols(s, {
+      query: strOpt(a, "query"),
+      kind: kindsOpt(a, "kind") ?? kindsOpt(a, "kinds"),
+      module: strOpt(a, "module") ?? strOpt(a, "scope"),
+    }),
+  get_symbol: async (s, a) => handleGetSymbol(s, { id: str(a, "id") as SymbolId }),
+  get_references: async (s, a) => handleGetReferences(s, str(a, "id") as SymbolId),
+  list_modules: async (s, a) => handleListModules(s, { pattern: strOpt(a, "pattern") }),
+  describe_module: async (s, a) => handleDescribeModule(s, { path: str(a, "path") as ModulePath }),
 
   // Write — structural
   create_symbol: async (s, a) => s.createSymbol(a),

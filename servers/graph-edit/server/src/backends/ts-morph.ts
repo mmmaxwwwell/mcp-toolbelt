@@ -24,11 +24,11 @@ export class TsMorphBackend implements Backend {
   readonly write = new TsMorphWriteBackend();
   readonly session = new TsMorphSessionBackend();
 
-  load(root: ProjectRoot, policy: PolicyConfig): Promise<void> {
-    return this.session.load(root, policy);
+  async load(root: ProjectRoot, policy: PolicyConfig): Promise<void> {
+    await this.read.load(root, policy);
   }
-  reload(): Promise<void> {
-    return this.session.reload();
+  async reload(): Promise<void> {
+    await this.read.reload();
   }
 
   listSymbols(query?: string, kinds?: SymbolKind[], scope?: string): Promise<SymbolRecord[]> {

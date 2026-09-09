@@ -1,4 +1,6 @@
 import { NotImplementedError } from "./errors.js";
+import { NameSearchIndex } from "./search/name-search.js";
+import { runFind, type FindResponse } from "./tools/find.js";
 import type {
   Backend,
   CommitResult,
@@ -9,11 +11,13 @@ import type {
   ProjectRoot,
   ReadResponse,
   Reference,
+  RelatedItem,
   SymbolDetail,
   SymbolId,
   SymbolKind,
   SymbolRecord,
 } from "./types.js";
+import type { Project } from "ts-morph";
 
 export interface SessionOptions {
   root: ProjectRoot;
@@ -26,6 +30,7 @@ export class Session {
   readonly policy: PolicyConfig;
   readonly backend: Backend;
   loaded = false;
+  private readonly nameIndex = new NameSearchIndex();
 
   constructor(opts: SessionOptions) {
     this.root = opts.root;
@@ -35,8 +40,52 @@ export class Session {
 
   async ensureLoaded(): Promise<void> {
     if (this.loaded) return;
-    // Real load happens in Phase 3; keep skeleton no-op-throw semantics for now.
+    try {
+      await this.backend.load(this.root, this.policy);
+      this.loaded = true;
+      return;
+    } catch (err) {
+      if (!(err instanceof NotImplementedError)) throw err;
+    }
+    // Fallback: some backends split load across sub-modules (e.g. ts-morph read backend
+    // is loadable independently of the session backend during Phase 1 development).
+    const readBackend = (this.backend as unknown as {
+      read?: { load?: (r: ProjectRoot, p: PolicyConfig) => Promise<void> };
+    }).read;
+    if (readBackend?.load) {
+      await readBackend.load(this.root, this.policy);
+      this.loaded = true;
+      return;
+    }
     throw new NotImplementedError("session.load");
+  }
+
+  private getProjectForRead(): Project {
+    const readBackend = this.backend as unknown as {
+      read?: { getProject?: () => Project };
+    };
+    const getProject = readBackend.read?.getProject;
+    if (!getProject) throw new NotImplementedError("session.load", "read backend project unavailable");
+    return getProject.call(readBackend.read);
+  }
+
+  private async loadBuildRelated(): Promise<
+    | ((project: Project, root: ProjectRoot, id: SymbolId, limit?: number) => Promise<RelatedItem[]>)
+    | undefined
+  > {
+    try {
+      const mod = (await import("./related.js")) as {
+        buildRelated?: (
+          project: Project,
+          root: ProjectRoot,
+          id: SymbolId,
+          limit?: number
+        ) => Promise<RelatedItem[]>;
+      };
+      return mod.buildRelated;
+    } catch {
+      return undefined;
+    }
   }
 
   // ---- Read tools ----
@@ -173,9 +222,15 @@ export class Session {
   }
 
   async find(
-    _query: string,
-    _opts?: { kinds?: SymbolKind[]; scope?: string; mode?: "name" | "concept" | "usage" | "auto" }
-  ): Promise<unknown> {
-    throw new NotImplementedError("find");
+    query: string,
+    opts?: { kinds?: SymbolKind[]; scope?: string; mode?: "name" | "concept" | "usage" | "auto" }
+  ): Promise<FindResponse> {
+    await this.ensureLoaded();
+    const project = this.getProjectForRead();
+    const buildRelated = await this.loadBuildRelated();
+    return runFind(
+      { project, root: this.root, index: this.nameIndex, buildRelated },
+      { query, kinds: opts?.kinds, scope: opts?.scope, mode: opts?.mode }
+    );
   }
 }
