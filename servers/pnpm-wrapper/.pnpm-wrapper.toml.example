@@ -1,0 +1,58 @@
+# Example .pnpm-wrapper.toml — drop at the project root.
+# Missing file = fully permissive (hardcoded refusals still apply, and the
+# bwrap sandbox is ALWAYS on).
+
+[add]
+# Empty allow = allow anything not on deny.
+allow = []
+deny  = ["evil-package", "left-pad"]
+# These packages may only be added as devDependencies (dev: true).
+# Glob syntax: `*` matches any run of characters.
+require_dev = ["@types/*", "eslint-*", "prettier", "vitest*"]
+
+[run]
+# Which package.json scripts the agent may invoke.
+# Empty allow = any script defined in package.json (still subject to deny).
+allow = ["build", "test", "lint", "typecheck", "format"]
+deny  = ["release", "deploy", "publish"]
+
+[update]
+# patch  — semver-safe patch updates only (default)
+# minor  — allow minor bumps (respects package.json ranges)
+# latest — pass --latest to pnpm update
+default = "patch"
+
+# ------------------------------------------------------------------
+# Sandbox — ALWAYS on. Only these knobs are configurable.
+# ------------------------------------------------------------------
+
+[sandbox]
+# Extra host paths mounted into every pnpm invocation.
+# Use absolute paths or `~/…` (expands to $HOME).
+extra_rw = []              # e.g. ["/var/cache/company-registry"]
+extra_ro = []              # e.g. ["~/.config/company-ca.pem"]
+
+# Per-verb override for the `script`-kind verbs (run/test/lint/typecheck/audit).
+# `install` / `readonly` verbs use their fixed presets — no override needed.
+[sandbox.scripts]
+# Base preset for `run` and script-kind verbs when no per-script entry matches.
+# One of: install (network + writable pnpm caches), readonly (no network,
+# tmpfs $HOME), strict (no network, tmpfs $HOME, project RW only).
+default_preset = "install"
+
+# Per-script overrides. Key is the script/verb name.
+# Example: tighten tests + lint down to strict (no network, no caches).
+# "test"  = "strict"
+# "lint"  = "strict"
+# "audit" = "install"     # audit talks to the registry — leave `install`
+
+# ------------------------------------------------------------------
+# Escape hatch — disable the sandbox for a specific verb entirely.
+# Prefer NOT populating this. Each entry MUST literally set `off = true`
+# and provide a non-empty reason string. Any other value is a config
+# error and the server will refuse to start.
+# ------------------------------------------------------------------
+
+# [sandbox.disabled.some_verb]
+# off    = true
+# reason = "Explain here why this verb has to bypass the sandbox."

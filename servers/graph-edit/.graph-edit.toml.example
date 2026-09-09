@@ -1,0 +1,48 @@
+[project]
+tsconfig = "tsconfig.json"           # required for TS backend
+root_dir = "src"                     # where symbols live
+
+[layout]
+one_class_per_file = true            # class Foo → src/**/foo.ts
+one_component_per_file = true        # React FC → matches [layout.components] rules
+function_grouping = "topic"          # "topic" | "one_per_file" | "keep_existing"
+
+[layout.components]
+pattern = "^[A-Z][a-zA-Z]*$"         # PascalCase named exports of JSX
+target_dir = "src/components/"
+naming = "kebab-case"                # UserCard → user-card.tsx
+
+[layout.hooks]
+pattern = "^use[A-Z]"
+target_dir = "src/hooks/"
+
+[layout.services]
+pattern = "Service$"
+target_dir = "src/services/"
+
+[imports]
+sort_order = ["node", "external", "absolute", "relative"]
+absolute_prefix = "@/"               # matches tsconfig paths
+merge_duplicates = true
+remove_unused = true                 # on every commit
+
+[naming]
+functions = "camelCase"
+classes = "PascalCase"
+types = "PascalCase"
+constants = "SCREAMING_SNAKE_CASE"   # top-level const with primitive initializer
+enums = "PascalCase"
+enum_members = "PascalCase"
+
+[reexports]
+barrel_files = "auto"                # "auto" | "manual" | "none"
+# "auto": maintain src/*/index.ts to re-export public symbols in that folder
+public_marker = "@public"            # jsdoc tag; symbols without it stay module-private
+
+[formatter]
+command = "prettier"                 # or "biome format"
+args = ["--write"]
+skip_if_missing = false              # error out if formatter not on PATH
+
+[type_check]
+strict = true                        # commit refuses on any tsc error

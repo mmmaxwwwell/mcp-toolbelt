@@ -1,0 +1,24 @@
+{
+  "name": "pnpm-wrapper",
+  "version": "0.1.0",
+  "description": "Fixed-verb MCP wrapper around pnpm",
+  "type": "module",
+  "bin": {
+    "pnpm-wrapper": "dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "~1.12.0",
+    "@iarna/toml": "^2.2.5"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.7.0"
+  }
+}
