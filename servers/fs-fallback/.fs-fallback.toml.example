@@ -1,0 +1,86 @@
+# Example .fs-fallback.toml — copy to your project root and edit.
+#
+# Policy for the fs-fallback MCP server. Discovered by walking up from cwd.
+# Set FS_FALLBACK_CONFIG=/abs/path to skip discovery.
+#
+# Pattern syntax is micromatch (** = any depth, * = any run of non-slash
+# characters). Patterns are matched against the project-root-relative path.
+
+# ---------------------------------------------------------------------------
+# READ policy — what may be read via read_file / read_file_range / list_dir /
+# stat_file / glob. Order: deny first, then allow.
+# ---------------------------------------------------------------------------
+[read]
+allow = ["**/*"]
+deny  = [
+  ".env",
+  ".env.*",
+  "secrets/**",
+  "**/.aws/**",
+  "**/.ssh/**",
+  "**/id_rsa*",
+  "**/*.pem",
+]
+
+# ---------------------------------------------------------------------------
+# WRITE policy — write_file / append_file / delete_file all use the same chain:
+#   1. edit_surface_refuse   — source-code paths are punted to graph-edit
+#                              (preferred, TS v1) or edit-surface (anchor
+#                              fallback) unless listed in allow_source_override.
+#   2. deny                  — hard refusal.
+#   3. soft_deny             — warn + require confirm: true.
+#   4. allow                 — permit.
+#   5. no allow match        — refuse with "add pattern to [write.allow]".
+# ---------------------------------------------------------------------------
+[write]
+allow = [
+  "docs/**",
+  "*.md",
+  "*.json",
+  "*.toml",
+  "*.yaml",
+  "*.yml",
+  "scripts/**",
+]
+# Forces graph-edit / edit-surface for these paths. Default list already
+# covers .ts/.tsx/.js/.jsx/.py/.go/.rs/.nix — override only if you need to.
+# edit_surface_refuse = ["**/*.ts", "**/*.tsx", ...]
+
+# Hard-deny paths — no confirm can bypass. graph-edit-supported languages
+# (TS/TSX/JS/JSX in v1) are listed here so raw writes are refused outright;
+# the agent should route through graph-edit (open_symbol → add_method /
+# edit_symbol_body) instead. Non-source edits still flow through [write.allow].
+deny  = [
+  "**/*.ts",
+  "**/*.tsx",
+  "**/*.js",
+  "**/*.jsx",
+]
+
+# Explicit exceptions to the edit-surface refusal. Useful for generated
+# files or test fixtures the agent legitimately needs to overwrite raw.
+allow_source_override = []
+
+# Soft-deny — the agent CAN write these with confirm: true, but the tool
+# response leads with the hint so the agent picks the better tool if one exists.
+soft_deny = [
+  { pattern = "package.json",   hint = "editing package.json manually — did you mean pnpm-wrapper.add / .remove?" },
+  { pattern = "pnpm-lock.yaml", hint = "lockfiles are auto-managed — use pnpm-wrapper.install to regenerate" },
+  { pattern = "Cargo.lock",     hint = "lockfiles are auto-managed — use cargo/nix commands via nix-dev-exec" },
+  { pattern = "flake.lock",     hint = "run `nix flake lock --update-input <name>` via nix-dev-exec" },
+]
+
+# ---------------------------------------------------------------------------
+# Trash — soft-deleted files move to .fs-fallback-trash/<YYYY-MM-DD>/. Expired
+# buckets are purged on next server start.
+# ---------------------------------------------------------------------------
+[trash]
+retention_days = 7
+
+# ---------------------------------------------------------------------------
+# Audit — every write/append/delete is appended as one JSON line to this file
+# AND kept in an in-memory ring buffer for recent_writes().
+# ---------------------------------------------------------------------------
+[audit]
+log     = ".fs-fallback/audit.jsonl"
+enabled = true

@@ -18,6 +18,18 @@ The root `flake.nix` imports each server as a path input and re-exports its
 packages. The `scripts/claude-with-servers` script auto-detects which server
 binaries are on PATH and generates the merged `.mcp.json`.
 
+## Source-editing path
+
+`graph-edit` is the primary source-code editing path for languages it backs
+(TypeScript / TSX / JS / JSX in v1; Python and Rust planned). Agents operate
+on symbols — `open_symbol` → `add_method` / `edit_symbol_body` → `preview` →
+`commit` — and the server owns file placement, import bookkeeping, and
+formatting via `.graph-edit.toml`. `fs-fallback` refuses raw writes to
+graph-edit-supported source files and points the agent here; `edit-surface`
+remains as the anchor-based fallback for languages `graph-edit` doesn't back
+yet. Config, docs, and lockfile edits continue to flow through `fs-fallback`
+under its normal allow/deny/soft-deny rules.
+
 ## Testing strategy
 
 Three levels per server, all automated in `tests/`:
@@ -250,11 +262,52 @@ or `serve` subcommands. The MCP config in `.mcp.json` uses stdio transport.
 When pinning a new version, use `lib.fakeHash` first, then copy the correct
 hash from the error message.
 
+## Running the test suite
+
+Four entry points, each with a different cost/coverage trade-off:
+
+| Command | Runs | Needs |
+|---|---|---|
+| `make check` | Every `tests/*.sh` smoke test + the end-to-end scenario if all e2e binaries are on PATH | devShell (all server binaries + `bwrap` + `jq`) |
+| `make check-e2e` | Just `tests/scenarios/end-to-end.sh` — real MCP tool calls against `tests/fixtures/sample-project` | devShell + `bwrap` for sandbox-gated servers |
+| `make check-vm` | Full NixOS VM boot + smoke + scenario + sandbox-boundary probe + pnpm-wrapper `--global` refusal | KVM on the host |
+| `nix flake check` | Runs the `smoke-tests` check derivation; `vm-integration` builds separately on demand | Nix + (for vm) KVM |
+
+### What the VM test proves that the smoke tests don't
+
+The smoke and scenario tests run inside a plain devShell — they can assert
+the tool surface, sandbox descriptors, and dry-run argv, but bwrap sandbox
+enforcement is not exercised end-to-end because the nix build sandbox
+disables unprivileged user namespaces. The VM test:
+
+- Boots a real NixOS instance with unpriv userns enabled.
+- Runs a `nix-dev-exec` op in the `strict` preset that tries to
+  `cat /root/.ssh/id_rsa`; asserts the secret is NOT in the output.
+- Confirms `pnpm-wrapper` refuses the `--global` flag at the MCP layer.
+
+### Adding a new server to the test suite
+
+Mirror `tests/edit-surface.sh`:
+
+```bash
+#!/usr/bin/env bash
+set -euo pipefail
+source "$(dirname "$0")/lib.sh"
+mcp_smoke_test "<binary-name>" [extra-args-to-binary...]
+```
+
+For a richer test that pins the expected tool surface:
+
+```bash
+mcp_expect_tools "<binary>" tool_one tool_two tool_three
+```
+
 ## Post-implementation
 
 After all servers are packaged:
 
-1. Add a `nix flake check` that runs all `tests/*.sh`
+1. Add a `nix flake check` that runs all `tests/*.sh` — **done** (see
+   `checks.smoke-tests` and `checks.vm-integration` in `flake.nix`).
 2. Add CI (GitHub Actions) that builds all servers on push
 3. Add Renovate/Dependabot config to track upstream releases
 4. Write a `CLAUDE.md` for this repo so agents working on the toolbelt

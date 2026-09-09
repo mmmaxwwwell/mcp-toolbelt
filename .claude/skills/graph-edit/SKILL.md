@@ -1,0 +1,1 @@
+/home/max/git/mcp-toolbelt/servers/graph-edit/SKILL.md

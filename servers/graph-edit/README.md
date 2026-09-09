@@ -1,4 +1,4 @@
-# graph-edit (design only)
+# graph-edit (packaged (TS v1))
 
 AST-first code editor. The agent operates on **symbols** (functions, classes,
 types, methods) — not files, not text ranges. A stateful session accumulates
@@ -8,8 +8,11 @@ disk, deciding file layout, import order, and formatting from
 
 ## Status
 
-Design only — no implementation yet. This README exists to pressure-test the
-concept before building.
+Packaged (TS v1) — TypeScript backend implemented and wired into the root
+flake. Python and Rust backends are still planned. `fs-fallback` refuses
+raw writes to graph-edit-supported source files and points here first;
+`edit-surface` remains as the anchor-based fallback for unsupported
+languages.
 
 **Language backend plan:**
 - **TypeScript** — v1 target. Built on [`ts-morph`](https://ts-morph.com/)
