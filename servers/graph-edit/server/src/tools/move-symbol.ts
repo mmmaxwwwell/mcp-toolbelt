@@ -18,5 +18,6 @@ export async function handleMoveSymbol(
     args.id,
     args.target_module
   );
+  if (result.mutation) session.registerPending(result.mutation);
   return { data: result.mutation, warnings: result.warnings };
 }

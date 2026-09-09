@@ -21,11 +21,10 @@ export async function handleCreateSymbol(
 ): Promise<MutationResponse<PendingMutation | null>> {
   await session.ensureLoaded();
   try {
-    const pending = (await session.createSymbol(args)) as PendingMutation & {
-      __warnings?: Warning[];
-    };
-    const warnings = pending.__warnings ?? [];
-    if (pending.__warnings) delete pending.__warnings;
+    const pending = await session.createSymbol(args);
+    // session.registerPending has already drained sidecar warnings onto
+    // pending.warnings AND into session.warnings.
+    const warnings: Warning[] = pending.warnings ?? [];
     return { data: pending, warnings };
   } catch (err) {
     // Refuse cleanly for layout-ambiguous / policy-refusal outcomes instead

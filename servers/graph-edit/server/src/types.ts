@@ -83,6 +83,10 @@ export interface PendingMutation {
   target?: SymbolId;
   breaking_callers?: BreakingCaller[];
   raw_ops: unknown;          // backend-specific op record
+  // Phase 3 amendment: additive optional field. Session collects sidecar
+  // warnings (from create/imports/etc.) into this slot when pushing into
+  // session.pending so downstream consumers have one place to look.
+  warnings?: Warning[];
 }
 
 // Preview shape

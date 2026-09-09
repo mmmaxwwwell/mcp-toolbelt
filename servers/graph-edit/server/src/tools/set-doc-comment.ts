@@ -30,7 +30,8 @@ export async function handleSetDocComment(
       args.id,
       args.jsdoc_source
     );
-    return imports.toMutationResponse(mut);
+    session.registerPending(mut);
+    return { data: mut, warnings: mut.warnings ?? [] };
   } catch (err) {
     if (err instanceof RefusalError) {
       const warnings: Warning[] = [

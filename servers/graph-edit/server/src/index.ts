@@ -54,24 +54,34 @@ async function serve() {
     })),
   }));
 
+  // Serialize tool invocations. Session state (pending, in-memory ts-morph
+  // Project) is not concurrency-safe: two writes racing would corrupt the
+  // pending list AND ts-morph itself. The MCP SDK dispatches requests as
+  // they arrive, which is fine for read-only servers but not for a stateful
+  // editor. We queue every call through a rolling promise.
+  let queue: Promise<unknown> = Promise.resolve();
   server.setRequestHandler(CallToolRequestSchema, async (request) => {
     const { name, arguments: rawArgs } = request.params;
     const args = (rawArgs || {}) as Record<string, unknown>;
     const entry = registry.get(name);
     if (!entry) return errorResult(`Unknown tool: ${name}`);
-    try {
-      const result = await entry.handler(session, args);
-      return textResult(result);
-    } catch (err) {
-      if (
-        err instanceof NotImplementedError ||
-        err instanceof LayoutAmbiguousError ||
-        err instanceof RefusalError
-      ) {
-        return errorResult(err.message);
+    const task = queue.then(async () => {
+      try {
+        const result = await entry.handler(session, args);
+        return textResult(result);
+      } catch (err) {
+        if (
+          err instanceof NotImplementedError ||
+          err instanceof LayoutAmbiguousError ||
+          err instanceof RefusalError
+        ) {
+          return errorResult(err.message);
+        }
+        return errorResult(`Internal error in tool '${name}': ${(err as Error).message}`);
       }
-      return errorResult(`Internal error in tool '${name}': ${(err as Error).message}`);
-    }
+    });
+    queue = task.catch(() => undefined);
+    return task;
   });
 
   const transport = new StdioServerTransport();

@@ -21,5 +21,6 @@ export async function handleDeleteSymbol(
     args.id,
     mode
   );
+  if (result.mutation) session.registerPending(result.mutation);
   return { data: result.mutation, warnings: result.warnings };
 }

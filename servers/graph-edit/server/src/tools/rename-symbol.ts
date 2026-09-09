@@ -18,5 +18,6 @@ export async function handleRenameSymbol(
     args.id,
     args.new_name
   );
+  if (result.mutation) session.registerPending(result.mutation);
   return { data: result.mutation, warnings: result.warnings };
 }

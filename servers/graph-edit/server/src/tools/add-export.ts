@@ -25,7 +25,8 @@ export async function handleAddExport(
   }
   try {
     const mut = await imports.addExport(backend.read.getProject(), backend.read.getRoot(), args);
-    return imports.toMutationResponse(mut);
+    session.registerPending(mut);
+    return { data: mut, warnings: mut.warnings ?? [] };
   } catch (err) {
     if (err instanceof RefusalError) {
       const warnings: Warning[] = [{ kind: err.reason, message: err.message }];

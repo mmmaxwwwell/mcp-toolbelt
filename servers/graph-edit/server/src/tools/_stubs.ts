@@ -18,6 +18,12 @@ import { handleSetDocComment } from "./set-doc-comment.js";
 import { handleRenameSymbol } from "./rename-symbol.js";
 import { handleMoveSymbol } from "./move-symbol.js";
 import { handleDeleteSymbol, type RefactorCallers } from "./delete-symbol.js";
+import { handlePreview } from "./preview.js";
+import { handlePreviewTypes } from "./preview-types.js";
+import { handleCommit } from "./commit.js";
+import { handleDiscard } from "./discard.js";
+import { handleResetSession } from "./reset-session.js";
+import { handleSessionSummary } from "./session-summary.js";
 
 type Args = Record<string, unknown>;
 
@@ -140,18 +146,13 @@ export const stubHandlers: Record<string, (session: Session, args: Args) => Prom
     }),
 
   // Session
-  preview: async (s) => s.preview(),
-  preview_types: async (s) => s.previewTypes(),
-  commit: async (s, a) => s.commit(boolOpt(a, "accept_breaking_callers") ?? false),
-  discard: async (s) => {
-    s.discard();
-    return { discarded: true };
-  },
-  reset_session: async (s) => {
-    await s.resetSession();
-    return { reset: true };
-  },
-  session_summary: async (s) => s.sessionSummary(),
+  preview: async (s) => handlePreview(s),
+  preview_types: async (s) => handlePreviewTypes(s),
+  commit: async (s, a) =>
+    handleCommit(s, { accept_breaking_callers: boolOpt(a, "accept_breaking_callers") }),
+  discard: async (s) => handleDiscard(s),
+  reset_session: async (s) => handleResetSession(s),
+  session_summary: async (s) => handleSessionSummary(s),
 
   // Bundled
   open_symbol: async (s, a) => s.openSymbol(str(a, "id_or_query")),

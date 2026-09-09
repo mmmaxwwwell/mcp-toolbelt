@@ -21,11 +21,8 @@ export async function handleAddMethod(
 ): Promise<MutationResponse<PendingMutation | null>> {
   await session.ensureLoaded();
   try {
-    const pending = (await session.addMethod(args)) as PendingMutation & {
-      __warnings?: Warning[];
-    };
-    const warnings = pending.__warnings ?? [];
-    if (pending.__warnings) delete pending.__warnings;
+    const pending = await session.addMethod(args);
+    const warnings: Warning[] = pending.warnings ?? [];
     return { data: pending, warnings };
   } catch (err) {
     if (err instanceof RefusalError) {

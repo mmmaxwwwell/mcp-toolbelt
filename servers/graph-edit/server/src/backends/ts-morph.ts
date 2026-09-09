@@ -35,7 +35,7 @@ export class TsMorphBackend implements Backend {
 
   readonly read = new TsMorphReadBackend();
   readonly write = new TsMorphWriteBackend(this.read);
-  readonly session = new TsMorphSessionBackend();
+  readonly session = new TsMorphSessionBackend(this.read);
 
   async load(root: ProjectRoot, policy: PolicyConfig): Promise<void> {
     await this.read.load(root, policy);
@@ -110,26 +110,31 @@ export class TsMorphBackend implements Backend {
     return this.write.rawEditSymbol(id, newSource);
   }
 
+  // Session-level operations require the pending mutation list which lives on
+  // the Session class. The Session invokes `this.session.<method>(pending)`
+  // directly, bypassing the Backend-interface indirection for these. The
+  // interface methods below satisfy the type but are unused at runtime.
   preview(): Promise<PreviewResult> {
-    return this.session.preview();
+    return this.session.preview([]);
   }
   previewTypes(): Promise<PreviewResult["type_check"]> {
-    return this.session.previewTypes();
+    return this.session.previewTypes([]);
   }
   commit(acceptBreakingCallers: boolean): Promise<CommitResult> {
-    return this.session.commit(acceptBreakingCallers);
+    return this.session.commit([], [], [], acceptBreakingCallers);
   }
   discard(): void {
-    this.session.discard();
+    this.session.discard([]);
   }
 
-  openSymbol(idOrQuery: string): Promise<unknown> {
-    return this.session.openSymbol(idOrQuery);
+  openSymbol(_idOrQuery: string): Promise<unknown> {
+    // Phase 4 owns these; return NotImplemented placeholder.
+    return Promise.reject(new Error("open_symbol not implemented in v1 phase 3"));
   }
-  describeChangeZone(id: SymbolId): Promise<unknown> {
-    return this.session.describeChangeZone(id);
+  describeChangeZone(_id: SymbolId): Promise<unknown> {
+    return Promise.reject(new Error("describe_change_zone not implemented in v1 phase 3"));
   }
-  similarTo(id: SymbolId, k?: number): Promise<unknown> {
-    return this.session.similarTo(id, k);
+  similarTo(_id: SymbolId, _k?: number): Promise<unknown> {
+    return Promise.reject(new Error("similar_to not implemented in v1 phase 3"));
   }
 }

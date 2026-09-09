@@ -1,8 +1,10 @@
 import { NotImplementedError } from "./errors.js";
 import { NameSearchIndex } from "./search/name-search.js";
 import { runFind, type FindResponse } from "./tools/find.js";
+import { drainWarnings } from "./backends/ts-morph-imports.js";
 import type {
   Backend,
+  BreakingCaller,
   CommitResult,
   ModulePath,
   MutationResponse,
@@ -17,6 +19,7 @@ import type {
   SymbolId,
   SymbolKind,
   SymbolRecord,
+  Warning,
 } from "./types.js";
 import type { Project } from "ts-morph";
 
@@ -26,12 +29,29 @@ export interface SessionOptions {
   backend: Backend;
 }
 
+export interface SessionSummary {
+  pending_count: number;
+  symbols_touched: SymbolId[];
+  files_touched: ModulePath[];
+  breaking_callers_pending: BreakingCaller[];
+  diff_preview: string;
+}
+
+// PendingWithSidecar: 2A's sidecar shape (Phase 2 create/method used
+// `__warnings`). We drain that field into `mut.warnings` at push time.
+type PendingWithSidecar = PendingMutation & { __warnings?: Warning[] };
+
 export class Session {
   readonly root: ProjectRoot;
   readonly policy: PolicyConfig;
   readonly backend: Backend;
   loaded = false;
   private readonly nameIndex = new NameSearchIndex();
+
+  // Phase 3 state.
+  pending: PendingMutation[] = [];
+  breakingHistory: BreakingCaller[] = [];
+  warnings: Warning[] = [];
 
   constructor(opts: SessionOptions) {
     this.root = opts.root;
@@ -48,8 +68,6 @@ export class Session {
     } catch (err) {
       if (!(err instanceof NotImplementedError)) throw err;
     }
-    // Fallback: some backends split load across sub-modules (e.g. ts-morph read backend
-    // is loadable independently of the session backend during Phase 1 development).
     const readBackend = (this.backend as unknown as {
       read?: { load?: (r: ProjectRoot, p: PolicyConfig) => Promise<void> };
     }).read;
@@ -70,6 +88,36 @@ export class Session {
     return getProject.call(readBackend.read);
   }
 
+  private sessionBackend(): {
+    preview: (pending: PendingMutation[]) => Promise<PreviewResult>;
+    previewTypes: (pending: PendingMutation[]) => Promise<PreviewResult["type_check"]>;
+    commit: (
+      pending: PendingMutation[],
+      breakingHistory: BreakingCaller[],
+      warnings: Warning[],
+      acceptBreakingCallers: boolean
+    ) => Promise<CommitResult>;
+    discard: (pending: PendingMutation[]) => void;
+    reload: () => Promise<void>;
+  } {
+    const b = this.backend as unknown as {
+      session?: {
+        preview: (pending: PendingMutation[]) => Promise<PreviewResult>;
+        previewTypes: (pending: PendingMutation[]) => Promise<PreviewResult["type_check"]>;
+        commit: (
+          pending: PendingMutation[],
+          breakingHistory: BreakingCaller[],
+          warnings: Warning[],
+          acceptBreakingCallers: boolean
+        ) => Promise<CommitResult>;
+        discard: (pending: PendingMutation[]) => void;
+        reload: () => Promise<void>;
+      };
+    };
+    if (!b.session) throw new NotImplementedError("session", "session backend unavailable");
+    return b.session;
+  }
+
   private async loadBuildRelated(): Promise<
     | ((project: Project, root: ProjectRoot, id: SymbolId, limit?: number) => Promise<RelatedItem[]>)
     | undefined
@@ -87,6 +135,33 @@ export class Session {
     } catch {
       return undefined;
     }
+  }
+
+  // Track a produced PendingMutation: drain sidecar warnings from 2A/2D and
+  // stash on both mut.warnings AND the session-level warnings roll-up.
+  registerPending(mut: PendingMutation | PendingWithSidecar): PendingMutation {
+    const warnings: Warning[] = [];
+    // 2A sidecar: __warnings on the mutation.
+    const anyMut = mut as PendingWithSidecar;
+    if (Array.isArray(anyMut.__warnings)) {
+      warnings.push(...anyMut.__warnings);
+      delete anyMut.__warnings;
+    }
+    // 2D side-channel map keyed by mutation id.
+    try {
+      warnings.push(...drainWarnings(mut.id));
+    } catch {
+      // ignore
+    }
+    if (warnings.length > 0) {
+      mut.warnings = [...(mut.warnings ?? []), ...warnings];
+      this.warnings.push(...warnings);
+    }
+    if (mut.breaking_callers && mut.breaking_callers.length > 0) {
+      this.breakingHistory.push(...mut.breaking_callers);
+    }
+    this.pending.push(mut);
+    return mut;
   }
 
   // ---- Read tools ----
@@ -126,17 +201,20 @@ export class Session {
   // ---- Write structural ----
   async createSymbol(args: unknown): Promise<PendingMutation> {
     await this.ensureLoaded();
-    return this.backend.createSymbol(args);
+    const mut = await this.backend.createSymbol(args);
+    return this.registerPending(mut);
   }
 
   async addMethod(args: unknown): Promise<PendingMutation> {
     await this.ensureLoaded();
-    return this.backend.addMethod(args);
+    const mut = await this.backend.addMethod(args);
+    return this.registerPending(mut);
   }
 
   async addProperty(args: unknown): Promise<PendingMutation> {
     await this.ensureLoaded();
-    return this.backend.addProperty(args);
+    const mut = await this.backend.addProperty(args);
+    return this.registerPending(mut);
   }
 
   async editSymbolBody(_id: SymbolId, _body: string): Promise<MutationResponse> {
@@ -185,27 +263,80 @@ export class Session {
 
   // ---- Session lifecycle ----
   async preview(): Promise<PreviewResult> {
-    throw new NotImplementedError("preview");
+    await this.ensureLoaded();
+    return this.sessionBackend().preview(this.pending);
   }
 
   async previewTypes(): Promise<PreviewResult["type_check"]> {
-    throw new NotImplementedError("preview_types");
+    await this.ensureLoaded();
+    return this.sessionBackend().previewTypes(this.pending);
   }
 
-  async commit(_acceptBreakingCallers: boolean): Promise<CommitResult> {
-    throw new NotImplementedError("commit");
+  async commit(acceptBreakingCallers: boolean): Promise<CommitResult> {
+    await this.ensureLoaded();
+    const result = await this.sessionBackend().commit(
+      this.pending,
+      this.breakingHistory,
+      this.warnings,
+      acceptBreakingCallers
+    );
+    // Success path: clear session state.
+    this.pending = [];
+    this.breakingHistory = [];
+    this.warnings = [];
+    return result;
   }
 
   discard(): void {
-    throw new NotImplementedError("discard");
+    if (this.pending.length === 0) return;
+    this.sessionBackend().discard(this.pending);
+    this.pending = [];
+    this.breakingHistory = [];
+    this.warnings = [];
   }
 
   async resetSession(): Promise<void> {
-    throw new NotImplementedError("reset_session");
+    await this.ensureLoaded();
+    // Delegate to the read backend's fullReload if available; falls back to
+    // per-file refresh via session backend's reload.
+    const anyBackend = this.backend as unknown as {
+      read?: { fullReload?: () => Promise<void> };
+    };
+    if (typeof anyBackend.read?.fullReload === "function") {
+      await anyBackend.read.fullReload();
+    } else {
+      await this.sessionBackend().reload();
+    }
+    this.pending = [];
+    this.breakingHistory = [];
+    this.warnings = [];
   }
 
-  async sessionSummary(): Promise<unknown> {
-    throw new NotImplementedError("session_summary");
+  async sessionSummary(): Promise<SessionSummary> {
+    await this.ensureLoaded();
+    if (this.pending.length === 0) {
+      return {
+        pending_count: 0,
+        symbols_touched: [],
+        files_touched: [],
+        breaking_callers_pending: [],
+        diff_preview: "",
+      };
+    }
+    const preview = await this.sessionBackend().preview(this.pending);
+    const symbols = new Set<SymbolId>();
+    const files = new Set<ModulePath>();
+    for (const p of this.pending) {
+      if (p.target) symbols.add(p.target);
+      for (const f of extractTouchedFromMut(p)) files.add(f);
+    }
+    return {
+      pending_count: this.pending.length,
+      symbols_touched: [...symbols],
+      files_touched: [...files],
+      breaking_callers_pending: [...this.breakingHistory],
+      diff_preview: preview.diff.slice(0, 2000),
+    };
   }
 
   // ---- Bundled ----
@@ -237,4 +368,26 @@ export class Session {
       { query, kinds: opts?.kinds, scope: opts?.scope, mode: opts?.mode }
     );
   }
+}
+
+function extractTouchedFromMut(mut: PendingMutation): ModulePath[] {
+  const raw = mut.raw_ops as Record<string, unknown> | undefined;
+  const out: ModulePath[] = [];
+  if (!raw || typeof raw !== "object") return out;
+  const pushIf = (v: unknown) => {
+    if (typeof v === "string") out.push(v);
+  };
+  pushIf(raw.target_file);
+  pushIf(raw.file);
+  pushIf(raw.new_module);
+  pushIf(raw.target_module);
+  pushIf(raw.from_module);
+  pushIf(raw.source_module);
+  if (Array.isArray(raw.touched_files)) {
+    for (const t of raw.touched_files) if (typeof t === "string") out.push(t);
+  }
+  if (Array.isArray(raw.files_touched)) {
+    for (const t of raw.files_touched) if (typeof t === "string") out.push(t);
+  }
+  return out;
 }

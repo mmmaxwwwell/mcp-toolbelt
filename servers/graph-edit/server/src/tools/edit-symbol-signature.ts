@@ -12,6 +12,7 @@ export async function handleEditSymbolSignature(
     throw new Error("edit_symbol_signature: only ts-morph backend supported in v1");
   }
   const mutation = await backend.editSymbolSignature(args.id, args.signature);
-  const warnings: Warning[] = [];
+  session.registerPending(mutation);
+  const warnings: Warning[] = mutation.warnings ?? [];
   return { data: mutation, warnings };
 }

@@ -45,6 +45,7 @@ type NamedDecl =
 export class TsMorphReadBackend {
   private project: Project | null = null;
   private root: ProjectRoot | null = null;
+  private policy: PolicyConfig | null = null;
 
   async load(root: ProjectRoot, policy: PolicyConfig): Promise<void> {
     const tsconfigPath = join(root, policy.project.tsconfig);
@@ -73,6 +74,7 @@ export class TsMorphReadBackend {
       this.project.addSourceFilesAtPaths(patterns);
     }
     this.root = root;
+    this.policy = policy;
   }
 
   async reload(): Promise<void> {
@@ -88,6 +90,26 @@ export class TsMorphReadBackend {
   getRoot(): ProjectRoot {
     if (!this.root) throw new NotImplementedError("session", "root not loaded");
     return this.root;
+  }
+
+  getPolicy(): PolicyConfig {
+    if (!this.policy) throw new NotImplementedError("session", "policy not loaded");
+    return this.policy;
+  }
+
+  // Fully re-parse the project from disk. Preferred over refreshing each
+  // SourceFile individually because it discards in-session created files.
+  async fullReload(): Promise<void> {
+    if (!this.project || !this.root || !this.policy) {
+      throw new NotImplementedError("session", "project not loaded");
+    }
+    // Rebuild the Project entirely; refresh doesn't drop in-session-created files.
+    const root = this.root;
+    const policy = this.policy;
+    this.project = null;
+    this.root = null;
+    this.policy = null;
+    await this.load(root, policy);
   }
 
   resolveSymbolIdToNode(id: SymbolId): NamedDecl | null {
