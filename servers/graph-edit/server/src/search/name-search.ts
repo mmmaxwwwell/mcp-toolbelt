@@ -1,3 +1,4 @@
+import { existsSync } from "node:fs";
 import { relative } from "node:path";
 import micromatch from "micromatch";
 import {
@@ -15,6 +16,7 @@ import {
   type VariableDeclaration,
 } from "ts-morph";
 import type { ModulePath, ProjectRoot, SymbolId, SymbolKind } from "../types.js";
+import { searchFts, type FtsHit } from "./fts-index.js";
 
 export interface NameIndexEntry {
   id: SymbolId;
@@ -42,11 +44,14 @@ type NamedDecl =
   | PropertyDeclaration
   | VariableDeclaration;
 
+const FTS_MIN_HITS = 3;
+
 export class NameSearchIndex {
   private entries: NameIndexEntry[] = [];
   private built = false;
   private projectRef: Project | null = null;
   private rootRef: ProjectRoot | null = null;
+  private ftsDbPath: string | undefined;
 
   build(project: Project, root: ProjectRoot): void {
     this.projectRef = project;
@@ -68,6 +73,11 @@ export class NameSearchIndex {
   invalidate(): void {
     this.built = false;
     this.entries = [];
+  }
+
+  /** Point the index at a prebuilt SQLite FTS5 file. Missing files are tolerated. */
+  setFtsDbPath(dbPath: string | undefined): void {
+    this.ftsDbPath = dbPath;
   }
 
   size(): number {
@@ -93,6 +103,56 @@ export class NameSearchIndex {
     }
     results.sort((a, b) => b.score - a.score || a.name.localeCompare(b.name));
     return results;
+  }
+
+  /**
+   * Preferred search path when an FTS5 index is available. Falls back to (or
+   * augments with) the in-memory scorer when FTS returns few hits, or is
+   * unavailable / errors out.
+   */
+  async searchAsync(
+    query: string,
+    opts: { kinds?: SymbolKind[]; scope?: string; limit?: number } = {}
+  ): Promise<NameHit[]> {
+    const limit = opts.limit ?? 20;
+    const dbPath = this.ftsDbPath;
+    if (!dbPath || !existsSync(dbPath)) {
+      return this.search(query, opts);
+    }
+
+    let ftsHits: FtsHit[] = [];
+    try {
+      ftsHits = await searchFts(dbPath, query, limit);
+    } catch (err) {
+      process.stderr.write(
+        `graph-edit: FTS5 search failed, falling back to in-memory: ${
+          err instanceof Error ? err.message : String(err)
+        }\n`
+      );
+      return this.search(query, opts);
+    }
+
+    const converted = ftsHits.map((h) => fromFtsHit(h, this.lookupEntry(h.id)));
+    const filtered = filterHits(converted, opts);
+
+    if (filtered.length >= FTS_MIN_HITS) return filtered;
+
+    // Augment with the in-memory scorer to cover cases the tokenizer misses
+    // (camelCase-only splits, symbol suffixes) — dedupe on symbol id.
+    const memHits = this.search(query, opts);
+    const seen = new Set(filtered.map((h) => h.id));
+    const augmented = [...filtered];
+    for (const h of memHits) {
+      if (seen.has(h.id)) continue;
+      augmented.push(h);
+      seen.add(h.id);
+    }
+    return augmented;
+  }
+
+  private lookupEntry(id: SymbolId): NameIndexEntry | undefined {
+    for (const e of this.entries) if (e.id === id) return e;
+    return undefined;
   }
 
   private filterEntries(opts: { kinds?: SymbolKind[]; scope?: string }): NameIndexEntry[] {
@@ -161,6 +221,49 @@ export class NameSearchIndex {
     const id: SymbolId = `sym:${modulePath}#${parentName}.${name}`;
     this.entries.push({ id, kind, name, module: modulePath, signature, doc, snippet });
   }
+}
+
+function fromFtsHit(hit: FtsHit, existing?: NameIndexEntry): NameHit {
+  const snippet = existing?.snippet ?? hit.signature;
+  const doc = existing?.doc ?? hit.jsdoc_summary;
+  return {
+    id: hit.id,
+    kind: hit.kind,
+    name: hit.name,
+    module: hit.module,
+    signature: hit.signature,
+    doc,
+    snippet,
+    score: hit.bm25_score,
+    source_index: "name",
+  };
+}
+
+function filterHits(
+  hits: NameHit[],
+  opts: { kinds?: SymbolKind[]; scope?: string }
+): NameHit[] {
+  let out = hits;
+  if (opts.kinds && opts.kinds.length > 0) {
+    const set = new Set(opts.kinds);
+    out = out.filter((h) => set.has(h.kind));
+  }
+  if (opts.scope) {
+    out = filterHitsByScope(out, opts.scope);
+  }
+  return out;
+}
+
+function filterHitsByScope(hits: NameHit[], scope: string): NameHit[] {
+  if (scope.startsWith("sym:")) {
+    const hashIdx = scope.indexOf("#");
+    if (hashIdx > 0) {
+      const modulePath = scope.slice(4, hashIdx);
+      return hits.filter((h) => h.module === modulePath);
+    }
+    return hits;
+  }
+  return hits.filter((h) => micromatch.isMatch(h.module, scope));
 }
 
 function scoreEntry(e: NameIndexEntry, q: string, lowerQ: string): number {

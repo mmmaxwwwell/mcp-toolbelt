@@ -1,5 +1,6 @@
 import { NotImplementedError } from "./errors.js";
 import { NameSearchIndex } from "./search/name-search.js";
+import { buildFtsIndex, dbPathForRoot } from "./search/fts-index.js";
 import { runFind, type FindResponse } from "./tools/find.js";
 import { drainWarnings } from "./backends/ts-morph-imports.js";
 import type {
@@ -47,6 +48,8 @@ export class Session {
   readonly backend: Backend;
   loaded = false;
   private readonly nameIndex = new NameSearchIndex();
+  ftsDbPath: string | undefined;
+  private ftsBuild: Promise<void> | null = null;
 
   // Phase 3 state.
   pending: PendingMutation[] = [];
@@ -64,6 +67,7 @@ export class Session {
     try {
       await this.backend.load(this.root, this.policy);
       this.loaded = true;
+      this.startFtsRebuild();
       return;
     } catch (err) {
       if (!(err instanceof NotImplementedError)) throw err;
@@ -74,9 +78,55 @@ export class Session {
     if (readBackend?.load) {
       await readBackend.load(this.root, this.policy);
       this.loaded = true;
+      this.startFtsRebuild();
       return;
     }
     throw new NotImplementedError("session.load");
+  }
+
+  /**
+   * Kick off an FTS5 index rebuild in the background. Idempotent — an in-flight
+   * build is reused. Failures are swallowed (stderr'd); find() gracefully
+   * degrades to the in-memory scorer.
+   */
+  private startFtsRebuild(): void {
+    if (this.ftsBuild) return;
+    let project: Project;
+    try {
+      project = this.getProjectForRead();
+    } catch {
+      return;
+    }
+    const dbPath = dbPathForRoot(this.root);
+    const started = Date.now();
+    this.ftsBuild = buildFtsIndex(project, this.root, dbPath)
+      .then(() => {
+        this.ftsDbPath = dbPath;
+        this.nameIndex.setFtsDbPath(dbPath);
+        const elapsed = Date.now() - started;
+        process.stderr.write(
+          `graph-edit: FTS5 index built at ${dbPath} in ${elapsed}ms\n`
+        );
+      })
+      .catch((err: unknown) => {
+        process.stderr.write(
+          `graph-edit: FTS5 index build failed: ${
+            err instanceof Error ? err.message : String(err)
+          }\n`
+        );
+      });
+  }
+
+  /**
+   * Wait for the in-flight FTS build if one is running, up to `timeoutMs`. If
+   * the build hasn't landed in time, callers proceed with the in-memory index.
+   */
+  async waitForFts(timeoutMs = 1500): Promise<void> {
+    if (!this.ftsBuild || this.ftsDbPath) return;
+    await Promise.race([
+      this.ftsBuild,
+      new Promise<void>((resolve) => setTimeout(resolve, timeoutMs)),
+    ]);
   }
 
   private getProjectForRead(): Project {
@@ -310,6 +360,12 @@ export class Session {
     this.pending = [];
     this.breakingHistory = [];
     this.warnings = [];
+    this.nameIndex.invalidate();
+    // Rebuild FTS from the newly-parsed project.
+    this.ftsBuild = null;
+    this.ftsDbPath = undefined;
+    this.nameIndex.setFtsDbPath(undefined);
+    this.startFtsRebuild();
   }
 
   async sessionSummary(): Promise<SessionSummary> {
@@ -362,6 +418,10 @@ export class Session {
     opts?: { kinds?: SymbolKind[]; scope?: string; mode?: "name" | "concept" | "usage" | "auto" }
   ): Promise<FindResponse> {
     await this.ensureLoaded();
+    // If the FTS index is still building on the first find(), give it a small
+    // window before falling back — otherwise the first query would always miss
+    // the FTS path on a cold start.
+    await this.waitForFts();
     const project = this.getProjectForRead();
     const buildRelated = await this.loadBuildRelated();
     return runFind(

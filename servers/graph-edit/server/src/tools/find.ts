@@ -72,7 +72,10 @@ export async function runFind(ctx: FindContext, args: FindArgs): Promise<FindRes
   }
 
   // auto: name first; if weak, fall back to usage
-  const nameResults = ctx.index.search(args.query, { kinds: args.kinds, scope: args.scope });
+  const nameResults = await ctx.index.searchAsync(args.query, {
+    kinds: args.kinds,
+    scope: args.scope,
+  });
   const topScore = nameResults[0]?.score ?? 0;
   if (nameResults.length >= AUTO_MIN_HITS && topScore >= AUTO_MIN_SCORE) {
     return finalizeNameResponse(ctx, args, nameResults);
@@ -91,7 +94,8 @@ async function finalizeNameResponse(
   precomputed?: NameHit[]
 ): Promise<FindResponse> {
   const results =
-    precomputed ?? ctx.index.search(args.query, { kinds: args.kinds, scope: args.scope });
+    precomputed ??
+    (await ctx.index.searchAsync(args.query, { kinds: args.kinds, scope: args.scope }));
   const hits = results.length;
 
   if (hits > REFUSE_FLOOD) {
