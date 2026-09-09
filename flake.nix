@@ -44,6 +44,30 @@
     sqlite-store.inputs.nixpkgs.follows = "nixpkgs";
     sqlite-store.inputs.flake-utils.follows = "flake-utils";
 
+    docs-fetcher.url = "path:./servers/docs-fetcher";
+    docs-fetcher.inputs.nixpkgs.follows = "nixpkgs";
+    docs-fetcher.inputs.flake-utils.follows = "flake-utils";
+
+    nix-dev-exec.url = "path:./servers/nix-dev-exec";
+    nix-dev-exec.inputs.nixpkgs.follows = "nixpkgs";
+    nix-dev-exec.inputs.flake-utils.follows = "flake-utils";
+
+    pnpm-wrapper.url = "path:./servers/pnpm-wrapper";
+    pnpm-wrapper.inputs.nixpkgs.follows = "nixpkgs";
+    pnpm-wrapper.inputs.flake-utils.follows = "flake-utils";
+
+    fs-fallback.url = "path:./servers/fs-fallback";
+    fs-fallback.inputs.nixpkgs.follows = "nixpkgs";
+    fs-fallback.inputs.flake-utils.follows = "flake-utils";
+
+    github-api.url = "path:./servers/github-api";
+    github-api.inputs.nixpkgs.follows = "nixpkgs";
+    github-api.inputs.flake-utils.follows = "flake-utils";
+
+    graph-edit.url = "path:./servers/graph-edit";
+    graph-edit.inputs.nixpkgs.follows = "nixpkgs";
+    graph-edit.inputs.flake-utils.follows = "flake-utils";
+
     # nix-mcp-proxy is still under construction (spec-kit phase 6 — tasks
     # generated, not implemented). When it ships a buildable package the
     # passthrough server under ./servers/nix-mcp-proxy will start re-exporting
@@ -51,7 +75,7 @@
     # nix-mcp-proxy.url = "github:mmmaxwwwell/nix-mcp-proxy";
   };
 
-  outputs = { self, nixpkgs, flake-utils, code-graph, git-guard, codebase, web-browser, web-search, task-runner, test-runner, edit-surface, sqlite-store, ... }:
+  outputs = { self, nixpkgs, flake-utils, code-graph, git-guard, codebase, web-browser, web-search, task-runner, test-runner, edit-surface, sqlite-store, docs-fetcher, nix-dev-exec, pnpm-wrapper, fs-fallback, github-api, graph-edit, ... }:
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = import nixpkgs { inherit system; };
@@ -65,6 +89,12 @@
         mcpTestRunner = test-runner.packages.${system}.mcp-test-runner;
         semanticEditMcp = edit-surface.packages.${system}.semantic-edit-mcp;
         sqliteMemoryMcp = sqlite-store.packages.${system}.sqlite-memory-mcp;
+        docsFetcherPkg = docs-fetcher.packages.${system}.default;
+        nixDevExecPkg = nix-dev-exec.packages.${system}.default;
+        pnpmWrapperPkg = pnpm-wrapper.packages.${system}.default;
+        fsFallbackPkg = fs-fallback.packages.${system}.default;
+        githubApiPkg = github-api.packages.${system}.github-mcp-server;
+        graphEditPkg = graph-edit.packages.${system}.default;
 
         # claude-with-servers: wrapper script that starts all configured MCP
         # servers and launches claude with a merged .mcp.json.
@@ -104,12 +134,81 @@
           mcp-test-runner = mcpTestRunner;
           semantic-edit-mcp = semanticEditMcp;
           sqlite-memory-mcp = sqliteMemoryMcp;
+          docs-fetcher = docsFetcherPkg;
+          nix-dev-exec = nixDevExecPkg;
+          pnpm-wrapper = pnpmWrapperPkg;
+          fs-fallback = fsFallbackPkg;
+          github-mcp-server = githubApiPkg;
+          graph-edit = graphEditPkg;
           inherit claude-with-servers;
           default = claude-with-servers;
         };
 
         lib = {
           inherit mkShellHook;
+
+          # mkDevShell — one-call setup for consuming projects.
+          # Returns a devShell with selected MCP servers on PATH,
+          # claude-with-servers launcher, and a shellHook that
+          # configures code-review-graph if enabled.
+          mkDevShell =
+            { pkgs ? import nixpkgs { inherit system; }
+            , projectName ? "project"
+            , servers ? {}
+            , extraPackages ? []
+            , extraShellHook ? ""
+            }:
+            let
+              # Server enable flags with defaults
+              srv = {
+                codeGraph   = (servers.codeGraph or {}).enable or true;
+                codebase    = (servers.codebase or {}).enable or true;
+                editSurface = (servers.editSurface or {}).enable or true;
+                gitGuard    = (servers.gitGuard or {}).enable or true;
+                taskRunner  = (servers.taskRunner or {}).enable or true;
+                testRunner  = (servers.testRunner or {}).enable or true;
+                webBrowser  = (servers.webBrowser or {}).enable or false;
+                webSearch   = (servers.webSearch or {}).enable or false;
+                sqliteStore = (servers.sqliteStore or {}).enable or false;
+                docsFetcher = (servers.docsFetcher or {}).enable or false;
+                nixDevExec  = (servers.nixDevExec or {}).enable or false;
+                pnpmWrapper = (servers.pnpmWrapper or {}).enable or false;
+                fsFallback  = (servers.fsFallback or {}).enable or false;
+                githubApi   = (servers.githubApi or {}).enable or false;
+                graphEdit   = (servers.graphEdit or {}).enable or false;
+              };
+
+              # Map enabled flags to packages
+              serverPackages =
+                pkgs.lib.optional srv.codeGraph   codeGraphPkg
+                ++ pkgs.lib.optional srv.codebase    treeSitterMcp
+                ++ pkgs.lib.optional srv.editSurface semanticEditMcp
+                ++ pkgs.lib.optional srv.gitGuard    mcpServerGit
+                ++ pkgs.lib.optional srv.taskRunner  shellMcpPkg
+                ++ pkgs.lib.optional srv.testRunner  mcpTestRunner
+                ++ pkgs.lib.optional srv.webBrowser  webBrowserSidecar
+                ++ pkgs.lib.optional srv.webSearch   webSearchPkg
+                ++ pkgs.lib.optional srv.sqliteStore sqliteMemoryMcp
+                ++ pkgs.lib.optional srv.docsFetcher docsFetcherPkg
+                ++ pkgs.lib.optional srv.nixDevExec  nixDevExecPkg
+                ++ pkgs.lib.optional srv.pnpmWrapper pnpmWrapperPkg
+                ++ pkgs.lib.optional srv.fsFallback  fsFallbackPkg
+                ++ pkgs.lib.optional srv.githubApi   githubApiPkg
+                ++ pkgs.lib.optional srv.graphEdit   graphEditPkg;
+
+              hook = mkShellHook {
+                inherit projectName;
+                servers = {
+                  codeGraph = (servers.codeGraph or {}) // {
+                    enable = srv.codeGraph;
+                  };
+                };
+              };
+            in
+            pkgs.mkShell {
+              packages = serverPackages ++ [ claude-with-servers pkgs.git pkgs.jq ] ++ extraPackages;
+              shellHook = hook + extraShellHook;
+            };
         };
 
         # Dev shell for hacking on the toolbelt itself — gives you the
@@ -117,7 +216,82 @@
         # flake without entering a consumer project.
         # claude-with-servers is included so you can test the launcher.
         devShells.default = pkgs.mkShell {
-          packages = [ codeGraphPkg mcpServerGit treeSitterMcp webBrowserSidecar webSearchPkg shellMcpPkg mcpTestRunner semanticEditMcp sqliteMemoryMcp claude-with-servers pkgs.git pkgs.jq pkgs.uv ];
+          packages = [
+            codeGraphPkg mcpServerGit treeSitterMcp webBrowserSidecar webSearchPkg
+            shellMcpPkg mcpTestRunner semanticEditMcp sqliteMemoryMcp
+            docsFetcherPkg nixDevExecPkg pnpmWrapperPkg fsFallbackPkg githubApiPkg
+            graphEditPkg
+            claude-with-servers pkgs.git pkgs.jq pkgs.uv pkgs.bubblewrap
+          ];
+        };
+
+        # Automated test coverage — reachable via `nix flake check`.
+        # smoke-tests: fast per-server + integration bash tests in the nix
+        #   sandbox. No network, no unpriv userns; skips anything gated by
+        #   either at the test level.
+        # vm-integration: NixOS VM boot + full battery including the
+        #   fs-fallback / nix-dev-exec / pnpm-wrapper scenario, plus a
+        #   bwrap mount-boundary probe and a pnpm-wrapper --global refusal.
+        #   Requires KVM in the build environment.
+        checks = {
+          smoke-tests = pkgs.runCommand "mcp-toolbelt-smoke-tests"
+            {
+              nativeBuildInputs = [
+                pkgs.bash pkgs.jq pkgs.git pkgs.bubblewrap pkgs.coreutils
+                codeGraphPkg mcpServerGit treeSitterMcp webBrowserSidecar
+                webSearchPkg shellMcpPkg mcpTestRunner semanticEditMcp
+                sqliteMemoryMcp docsFetcherPkg nixDevExecPkg pnpmWrapperPkg
+                fsFallbackPkg githubApiPkg graphEditPkg claude-with-servers
+              ];
+            } ''
+              set -euo pipefail
+              cp -r ${self} $TMPDIR/src
+              chmod -R +w $TMPDIR/src
+              cd $TMPDIR/src
+              export HOME=$TMPDIR/home
+              mkdir -p $HOME
+              export GITHUB_PERSONAL_ACCESS_TOKEN=fake_token_for_test
+              # Sandbox-safe subset — omitted tests need something the nix
+              # build sandbox can't provide:
+              #   git-guard      → needs a real .git directory
+              #   integration    → claude-with-servers can't exec fake `claude`
+              #   env-toggles    → same
+              #   web-browser    → spins up a python http fixture, needs net
+              #   test-runner    → mcp-test-runner initialize hangs offline
+              SAFE=(
+                tests/lib.sh
+                tests/codebase.sh
+                tests/edit-surface.sh
+                tests/task-runner.sh
+                tests/sqlite-store.sh
+                tests/web-search.sh
+                tests/docs-fetcher.sh
+                tests/nix-dev-exec.sh
+                tests/pnpm-wrapper.sh
+                tests/fs-fallback.sh
+                tests/github-api.sh
+              )
+              fail=0
+              for t in "''${SAFE[@]}"; do
+                echo "--- $t ---"
+                bash "$t" || fail=1
+              done
+              if [ "$fail" -ne 0 ]; then
+                echo "FAIL: some smoke tests failed"
+                exit 1
+              fi
+              touch $out
+            '';
+
+          vm-integration = import ./tests/vm/default.nix {
+            inherit pkgs self;
+            fsFallback         = fsFallbackPkg;
+            nixDevExec         = nixDevExecPkg;
+            pnpmWrapper        = pnpmWrapperPkg;
+            docsFetcher        = docsFetcherPkg;
+            githubApi          = githubApiPkg;
+            semanticEditMcp    = semanticEditMcp;
+          };
         };
       }
     );

@@ -38,6 +38,26 @@
       },
       "parent": []
     },
+    "docs-fetcher": {
+      "inputs": {
+        "flake-utils": [
+          "flake-utils"
+        ],
+        "nixpkgs": [
+          "nixpkgs"
+        ],
+        "web-browser": "web-browser"
+      },
+      "locked": {
+        "path": "./servers/docs-fetcher",
+        "type": "path"
+      },
+      "original": {
+        "path": "./servers/docs-fetcher",
+        "type": "path"
+      },
+      "parent": []
+    },
     "edit-surface": {
       "inputs": {
         "flake-utils": [
@@ -75,6 +95,43 @@
         "type": "github"
       }
     },
+    "flake-utils_2": {
+      "inputs": {
+        "systems": "systems_2"
+      },
+      "locked": {
+        "lastModified": 1731533236,
+        "narHash": "sha256-l0KFg5HjrsfsO/JpG+r7fRrqm12kzFHyUHqHCVpMMbI=",
+        "owner": "numtide",
+        "repo": "flake-utils",
+        "rev": "11707dc2f618dd54ca8739b309ec4fc024de578b",
+        "type": "github"
+      },
+      "original": {
+        "owner": "numtide",
+        "repo": "flake-utils",
+        "type": "github"
+      }
+    },
+    "fs-fallback": {
+      "inputs": {
+        "flake-utils": [
+          "flake-utils"
+        ],
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "path": "./servers/fs-fallback",
+        "type": "path"
+      },
+      "original": {
+        "path": "./servers/fs-fallback",
+        "type": "path"
+      },
+      "parent": []
+    },
     "git-guard": {
       "inputs": {
         "flake-utils": [
@@ -90,6 +147,63 @@
       },
       "original": {
         "path": "./servers/git-guard",
+        "type": "path"
+      },
+      "parent": []
+    },
+    "github-api": {
+      "inputs": {
+        "flake-utils": [
+          "flake-utils"
+        ],
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "path": "./servers/github-api",
+        "type": "path"
+      },
+      "original": {
+        "path": "./servers/github-api",
+        "type": "path"
+      },
+      "parent": []
+    },
+    "graph-edit": {
+      "inputs": {
+        "flake-utils": [
+          "flake-utils"
+        ],
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "path": "./servers/graph-edit",
+        "type": "path"
+      },
+      "original": {
+        "path": "./servers/graph-edit",
+        "type": "path"
+      },
+      "parent": []
+    },
+    "nix-dev-exec": {
+      "inputs": {
+        "flake-utils": [
+          "flake-utils"
+        ],
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "path": "./servers/nix-dev-exec",
+        "type": "path"
+      },
+      "original": {
+        "path": "./servers/nix-dev-exec",
         "type": "path"
       },
       "parent": []
@@ -110,18 +224,59 @@
         "type": "github"
       }
     },
+    "nixpkgs_2": {
+      "locked": {
+        "lastModified": 1779508470,
+        "narHash": "sha256-Ap9KJX+5xHIn3bPIpfNgT6MEXdAECECwo4/rmlQD74M=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "29916453413845e54a65b8a1cf996842300cd299",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NixOS",
+        "ref": "nixos-unstable",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
+    "pnpm-wrapper": {
+      "inputs": {
+        "flake-utils": [
+          "flake-utils"
+        ],
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "path": "./servers/pnpm-wrapper",
+        "type": "path"
+      },
+      "original": {
+        "path": "./servers/pnpm-wrapper",
+        "type": "path"
+      },
+      "parent": []
+    },
     "root": {
       "inputs": {
         "code-graph": "code-graph",
         "codebase": "codebase",
+        "docs-fetcher": "docs-fetcher",
         "edit-surface": "edit-surface",
-        "flake-utils": "flake-utils",
+        "flake-utils": "flake-utils_2",
+        "fs-fallback": "fs-fallback",
         "git-guard": "git-guard",
-        "nixpkgs": "nixpkgs",
+        "github-api": "github-api",
+        "graph-edit": "graph-edit",
+        "nix-dev-exec": "nix-dev-exec",
+        "nixpkgs": "nixpkgs_2",
+        "pnpm-wrapper": "pnpm-wrapper",
         "sqlite-store": "sqlite-store",
         "task-runner": "task-runner",
         "test-runner": "test-runner",
-        "web-browser": "web-browser",
+        "web-browser": "web-browser_2",
         "web-search": "web-search"
       }
     },
@@ -145,6 +300,21 @@
       "parent": []
     },
     "systems": {
+      "locked": {
+        "lastModified": 1681028828,
+        "narHash": "sha256-Vy1rq5AaRuLzOxct8nz4T6wlgyUR7zLU309k9mBC768=",
+        "owner": "nix-systems",
+        "repo": "default",
+        "rev": "da67096a3b9bf56a91d16901293e51ba5b49a27e",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nix-systems",
+        "repo": "default",
+        "type": "github"
+      }
+    },
+    "systems_2": {
       "locked": {
         "lastModified": 1681028828,
         "narHash": "sha256-Vy1rq5AaRuLzOxct8nz4T6wlgyUR7zLU309k9mBC768=",
@@ -198,6 +368,23 @@
       "parent": []
     },
     "web-browser": {
+      "inputs": {
+        "flake-utils": "flake-utils",
+        "nixpkgs": "nixpkgs"
+      },
+      "locked": {
+        "path": "../web-browser",
+        "type": "path"
+      },
+      "original": {
+        "path": "../web-browser",
+        "type": "path"
+      },
+      "parent": [
+        "docs-fetcher"
+      ]
+    },
+    "web-browser_2": {
       "inputs": {
         "flake-utils": [
           "flake-utils"

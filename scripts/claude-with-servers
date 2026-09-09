@@ -91,11 +91,13 @@ build_mcp_config() {
   fi
 
   # github-api: GitHub platform operations
+  # Note: requires GITHUB_PERSONAL_ACCESS_TOKEN (or GitHub App creds) in env.
+  # The server itself will refuse to start without one; we still register it.
   if command -v github-mcp-server &>/dev/null && [ "${MCP_TOOLBELT_GITHUB:-1}" = "1" ]; then
     servers=$(echo "$servers" | jq '. + {
       "github-mcp-server": {
         "command": "github-mcp-server",
-        "args": []
+        "args": ["stdio"]
       }
     }')
   fi
@@ -145,6 +147,56 @@ build_mcp_config() {
     servers=$(echo "$servers" | jq '. + {
       "sqlite-store": {
         "command": "sqlite-memory-mcp",
+        "args": []
+      }
+    }')
+  fi
+
+  # docs-fetcher: version-pinned per-dependency docs with FTS5 search
+  if command -v docs-fetcher &>/dev/null && [ "${MCP_TOOLBELT_DOCS_FETCHER:-1}" = "1" ]; then
+    servers=$(echo "$servers" | jq '. + {
+      "docs-fetcher": {
+        "command": "docs-fetcher",
+        "args": []
+      }
+    }')
+  fi
+
+  # nix-dev-exec: registered operations run inside nix develop -c + bwrap sandbox
+  if command -v nix-dev-exec &>/dev/null && [ "${MCP_TOOLBELT_NIX_DEV_EXEC:-1}" = "1" ]; then
+    servers=$(echo "$servers" | jq '. + {
+      "nix-dev-exec": {
+        "command": "nix-dev-exec",
+        "args": []
+      }
+    }')
+  fi
+
+  # pnpm-wrapper: fixed-verb pnpm wrapper, sandboxed via bubblewrap
+  if command -v pnpm-wrapper &>/dev/null && [ "${MCP_TOOLBELT_PNPM_WRAPPER:-1}" = "1" ]; then
+    servers=$(echo "$servers" | jq '. + {
+      "pnpm-wrapper": {
+        "command": "pnpm-wrapper",
+        "args": []
+      }
+    }')
+  fi
+
+  # fs-fallback: ACL-gated raw read/write for non-code files
+  if command -v fs-fallback &>/dev/null && [ "${MCP_TOOLBELT_FS_FALLBACK:-1}" = "1" ]; then
+    servers=$(echo "$servers" | jq '. + {
+      "fs-fallback": {
+        "command": "fs-fallback",
+        "args": []
+      }
+    }')
+  fi
+
+  # graph-edit: AST-first source editing via ts-morph, symbol-oriented + policy-driven serialization
+  if command -v graph-edit &>/dev/null && [ "${MCP_TOOLBELT_GRAPH_EDIT:-1}" = "1" ]; then
+    servers=$(echo "$servers" | jq '. + {
+      "graph-edit": {
+        "command": "graph-edit",
         "args": []
       }
     }')

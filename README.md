@@ -38,11 +38,13 @@ with all servers configured.
 | [`code-graph`](servers/code-graph/) | working | Persistent knowledge graph of your codebase |
 | [`codebase`](servers/codebase/) | packaged | Tree-sitter-based code intelligence via [tree-sitter-mcp](https://github.com/nicobailon/tree-sitter-mcp) |
 | [`nix-mcp-proxy`](servers/nix-mcp-proxy/) | in development | Proxy middleware for all servers |
-| [`edit-surface`](servers/edit-surface/) | packaged | Graph-routed structured edits (TS/Python/Go/Nix) |
-| [`fs-fallback`](servers/fs-fallback/) | design only | ACL-gated raw read/write for non-code files |
-| [`pnpm-wrapper`](servers/pnpm-wrapper/) | design only | Fixed-verb pnpm wrapper with structured output |
-| [`nix-dev-exec`](servers/nix-dev-exec/) | design only | Registered operations run inside `nix develop -c` |
-| [`docs-fetcher`](servers/docs-fetcher/) | design only | Version-pinned dependency documentation |
+| [`edit-surface`](servers/edit-surface/) | packaged | Anchor-based code editing with tree-sitter validation via [jbr/semantic-edit-mcp](https://github.com/jbr/semantic-edit-mcp) |
+| [`graph-edit`](servers/graph-edit/) | packaged | AST-first source-code editing via ts-morph. Symbols not files. Stateful session + policy-driven serialization per `.graph-edit.toml`. TypeScript v1; Python (`libcst`) + Rust (`syn` + rust-analyzer) planned |
+| [`fs-fallback`](servers/fs-fallback/) | packaged | ACL-gated raw read/write for non-code files; soft-delete trash, audit log, `edit-surface` refusal hints |
+| [`pnpm-wrapper`](servers/pnpm-wrapper/) | packaged | Fixed-verb pnpm wrapper with structured output. Every invocation sandboxed via bubblewrap |
+| [`nix-dev-exec`](servers/nix-dev-exec/) | packaged | Registered operations run inside `nix develop -c`, wrapped in bubblewrap |
+| [`docs-fetcher`](servers/docs-fetcher/) | packaged | Reads manifests (npm/cargo/pypi) + fetches per-version docs into a tagged SQLite FTS5 index. Search by `tech`, `package`, `version` |
+| [`github-api`](servers/github-api/) | packaged | Official [github/github-mcp-server](https://github.com/github/github-mcp-server) — issues, PRs, code search, releases across 21 toolsets |
 | [`web-browser`](servers/web-browser/) | packaged | Sidecar wrapping [fetcher-mcp](https://github.com/jae-jae/fetcher-mcp); writes extracted markdown to a user-global SQLite FTS5 index for cross-page search |
 | [`web-search`](servers/web-search/) | packaged | DuckDuckGo search via [pskill9/web-search](https://github.com/pskill9/web-search); Tavily/Exa opt-in |
 | [`git-guard`](servers/git-guard/) | packaged | Scoped, audited git operations |

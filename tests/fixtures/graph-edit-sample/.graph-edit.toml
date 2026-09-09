@@ -1,0 +1,49 @@
+[project]
+tsconfig = "tsconfig.json"
+root_dir = "src"
+
+[layout]
+one_class_per_file = true
+one_component_per_file = true
+function_grouping = "topic"
+
+# Order matters: services first — the components pattern ^[A-Z] would match
+# service class names, so route services to src/services/ before falling
+# through to components.
+[layout.services]
+pattern = "Service$"
+target_dir = "src/services/"
+
+[layout.hooks]
+pattern = "^use[A-Z]"
+target_dir = "src/hooks/"
+
+[layout.components]
+pattern = "^[A-Z][a-zA-Z]*$"
+target_dir = "src/components/"
+naming = "kebab-case"
+
+[imports]
+sort_order = ["node", "external", "absolute", "relative"]
+absolute_prefix = "@/"
+merge_duplicates = true
+remove_unused = true
+
+[naming]
+functions = "camelCase"
+classes = "PascalCase"
+types = "PascalCase"
+constants = "SCREAMING_SNAKE_CASE"
+enums = "PascalCase"
+
+[reexports]
+barrel_files = "auto"
+public_marker = "@public"
+
+[formatter]
+command = "prettier"
+args = ["--write"]
+skip_if_missing = true
+
+[type_check]
+strict = true

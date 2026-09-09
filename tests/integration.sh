@@ -59,7 +59,9 @@ jq -e '.mcpServers' "$MCP_CONFIG" >/dev/null 2>&1 || {
 }
 echo "PASS: config has .mcpServers key"
 
-# Step 5: Verify all expected servers are present (7 new + code-graph + sqlite-store = 9)
+# Step 5: Verify all expected servers are present.
+# 9 previously-registered + 5 new (docs-fetcher, nix-dev-exec, pnpm-wrapper,
+# fs-fallback, github-mcp-server) = 14.
 EXPECTED_SERVERS=(
   code-review-graph
   mcp-server-git
@@ -70,6 +72,12 @@ EXPECTED_SERVERS=(
   semantic-edit-mcp
   mcp-test-runner
   sqlite-store
+  docs-fetcher
+  nix-dev-exec
+  pnpm-wrapper
+  fs-fallback
+  github-mcp-server
+  graph-edit
 )
 SERVER_COUNT=$(jq '.mcpServers | keys | length' "$MCP_CONFIG")
 if [ "$SERVER_COUNT" -lt 1 ]; then
