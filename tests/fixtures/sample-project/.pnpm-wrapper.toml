@@ -1,0 +1,20 @@
+# pnpm-wrapper policy for the sample project.
+# See servers/pnpm-wrapper/README.md.
+
+[add]
+allow = ["zod", "typescript", "@types/*", "vitest*"]
+deny  = ["evil-package"]
+require_dev = ["@types/*", "typescript", "vitest*"]
+
+[run]
+allow = ["test", "lint", "typecheck"]
+deny  = ["release", "deploy", "publish"]
+
+[update]
+default = "patch"
+
+[sandbox.scripts]
+default_preset = "install"
+"test"      = "strict"
+"lint"      = "strict"
+"typecheck" = "strict"

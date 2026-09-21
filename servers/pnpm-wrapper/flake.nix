@@ -16,7 +16,7 @@
           version = "0.1.0";
           src = ./server;
 
-          npmDepsHash = "sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=";
+          npmDepsHash = "sha256-4KcF3msooFOwFcwCA/Pc2sBtZfH8SScBrg6EQeq7Muc=";
 
           buildInputs = with pkgs; [ nodejs ];
 
@@ -38,7 +38,7 @@
           nativeBuildInputs = [ pkgs.makeWrapper ];
           postBuild = ''
             wrapProgram $out/bin/pnpm-wrapper \
-              --prefix PATH : "${pkgs.lib.makeBinPath [ pkgs.nodePackages.pnpm ]}"
+              --prefix PATH : "${pkgs.lib.makeBinPath [ pkgs.pnpm pkgs.bubblewrap ]}"
           '';
         };
       in

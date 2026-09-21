@@ -1,59 +1,77 @@
 # web-browser
 
-Nix packaging for [`mcp-read-website-fast`](https://github.com/just-every/mcp-read-website-fast)
-(MIT, pinned to v0.1.22) — a Model Context Protocol server that fetches web
-pages and converts them to clean, token-efficient Markdown for AI agents.
+Nix packaging for [`jae-jae/fetcher-mcp`](https://github.com/jae-jae/fetcher-mcp)
+(pinned to tag `v0.3.9`) plus a **custom sidecar** that layers an FTS5-backed
+page cache on top. The agent gets Playwright-rendered markdown *and* the
+ability to search across every page it has ever fetched.
 
 ## Upstream research
 
 | Field | Value |
 |---|---|
-| npm package | [`@just-every/mcp-read-website-fast`](https://www.npmjs.com/package/@just-every/mcp-read-website-fast) |
-| Latest release | **v0.1.22** (semver, tag on GitHub; published to npm) |
-| Repository | [just-every/mcp-read-website-fast](https://github.com/just-every/mcp-read-website-fast) |
-| License | MIT |
-| Node.js | >=20.0.0 |
-| Build system | TypeScript + tsc (ES modules) |
-| Entry point | `bin/mcp-read-website.js` (bin: `mcp-read-website-fast`) |
-| Stdio mode | Default command is `serve` (runs when no args given); uses `StdioServerTransport` — no special flags needed |
-| CLI flags | `--cache-dir <path>` (default: `.cache`), `--no-robots`, `-t/--timeout <ms>`, `-c/--concurrency <num>`, `-p/--pages <num>` |
+| Upstream repo | [jae-jae/fetcher-mcp](https://github.com/jae-jae/fetcher-mcp) |
+| Version | **v0.3.9** (commit `8754aff`) |
+| License | ISC |
+| Language | TypeScript (Node.js >=20) |
+| Runtime deps | Playwright 1.51.1 (Chromium), Mozilla Readability, Turndown |
+| Entry point | `fetcher-mcp` binary — stdio MCP, no flags |
 
-### Disk cache configuration
+### Upstream tools (proxied unchanged)
 
-- **Default location**: `.cache` directory relative to the working directory
-- **CLI flag**: `--cache-dir <path>` overrides the default on `fetch` and `clear-cache` subcommands
-- **Environment variable**: None — cache location is only configurable via CLI flag or the `cacheDir` option in the `fetchMarkdown()` API
-- **Cache management**: MCP resources `read-website-fast://status` (size metrics) and `read-website-fast://clear-cache` (purge); CLI `clear-cache` subcommand also available
-
-### Runtime dependencies
-
-| Package | Version constraint |
+| Tool | Description |
 |---|---|
-| @just-every/crawl | ^1.0.8 |
-| @modelcontextprotocol/sdk | ^1.29.0 |
-| commander | ^14.0.3 |
-| turndown-plugin-gfm | ^1.0.2 |
-| uuid | ^13.0.0 |
+| `fetch_url` | Render a URL with Playwright, extract main content via Readability, convert to markdown with Turndown |
+| `fetch_urls` | Batched form of `fetch_url` |
 
-### MCP tools provided
+### Sidecar tools (added by this flake)
 
-The server exposes 1 tool over MCP:
+The sidecar (`sidecar/src/index.ts`) spawns `fetcher-mcp` as a stdio child,
+forwards `tools/list` and `tools/call` to it, and on every successful
+`fetch_url`/`fetch_urls` writes the extracted markdown into SQLite. It also
+exposes four additional tools:
 
-- `read_website` — fetches a URL and converts the HTML to clean Markdown. Parameters: `url` (required), `pages` (optional, max 100 — controls crawl depth), `cookiesFile` (optional, path to cookies file for authenticated pages)
+| Tool | Description |
+|---|---|
+| `search_cached` | FTS5 BM25 search across cached pages. Returns `[{url, title, fetched_at, snippet}]`. Supports AND/OR/NOT and phrases. |
+| `get_cached` | Return full markdown for a previously fetched URL — no network. |
+| `list_cached` | Enumerate cached URLs ordered by most-recent fetch (`limit`, `offset`). |
+| `purge_cached` | Drop a stale row when an upstream doc page has changed. |
 
-### MCP resources provided
+## Storage
 
-- `read-website-fast://status` — cache size in MB and file count
-- `read-website-fast://clear-cache` — purge the disk cache
+- **Location:** `~/.cache/mcp-toolbelt/web-cache.db` (respects `XDG_CACHE_HOME`).
+  User-global — one cache shared across every project on the machine.
+- **Engine:** SQLite with WAL journaling + FTS5 (BM25 ranking).
+- **Schema:**
+  - `pages(id, url UNIQUE, title, fetched_at, markdown)`
+  - `pages_fts(title, markdown)` — external-content FTS5 table over `pages`,
+    kept in sync via `AFTER INSERT/UPDATE/DELETE` triggers.
+- **Write path:** `INSERT OR REPLACE` on URL — refetching the same URL replaces
+  the row so the freshest copy wins.
+- See `sidecar/src/db.ts` for the schema and prepared statements.
 
 ## Packaging notes
 
-- Published to npm as `@just-every/mcp-read-website-fast` — use `fetchurl` from the npm registry or `fetchFromGitHub` with matching tag.
-- Pure HTTP + Readability extraction — **no Playwright or browser dependency**. This is intentionally lightweight compared to `fetcher-mcp`.
-- The entry point (`bin/mcp-read-website.js`) auto-detects production vs dev mode and loads from `dist/` in production.
-- `serve-restart.ts` wraps the MCP server with auto-restart and exponential backoff (up to 10 restarts in 60s). When run via `npx` or as a Nix package, the restart wrapper is the default entry.
-- Use `buildNpmPackage` with `npmDepsHash` for reproducible builds.
-- No GitHub releases exist — pin to the `v0.1.22` git tag.
+- Two packages exposed by the flake:
+  - `web-browser-sidecar` (default) — the sidecar binary, wrapped so
+    `fetcher-mcp` is on its `PATH`.
+  - `fetcher-mcp` — the upstream server on its own, for users who don't want
+    the cache layer.
+- **Upstream is untouched.** When `fetcher-mcp` cuts a new release, bump the
+  `rev`/`hash`/`npmDepsHash` in `flake.nix` and the sidecar keeps working.
+- **Playwright browser compat layer** (`playwrightBrowsersCompat` in
+  `flake.nix`): fetcher-mcp v0.3.9 bundles Playwright 1.51.1, which expects
+  Chromium at revision-specific paths like
+  `chromium_headless_shell-1161/chrome-linux/headless_shell`. Nixpkgs'
+  `playwright-driver` may ship a newer revision with a different layout
+  (e.g. `chromium_headless_shell-1217/chrome-headless-shell-linux64/…`).
+  The derivation creates a symlink tree mapping the paths Playwright expects
+  onto whatever nixpkgs actually provides.
+- The sidecar uses `better-sqlite3` — `python3` and `pkg-config` are in
+  `nativeBuildInputs` for the node-gyp build of the native addon.
+- Playwright browser download is skipped at npm install time
+  (`PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1`, `--ignore-scripts`); the compat
+  layer supplies the browsers at runtime via `PLAYWRIGHT_BROWSERS_PATH`.
 
 ## Standalone use
 
@@ -62,10 +80,36 @@ The server exposes 1 tool over MCP:
   inputs.web-browser.url = "github:mmmaxwwwell/mcp-toolbelt?dir=servers/web-browser";
 
   outputs = { self, nixpkgs, flake-utils, web-browser }:
-    flake-utils.lib.eachDefaultSystem (system: {
-      devShells.default = nixpkgs.legacyPackages.${system}.mkShell {
-        packages = [ web-browser.packages.${system}.mcp-read-website-fast ];
-      };
-    });
+    flake-utils.lib.eachDefaultSystem (system:
+      let pkgs = import nixpkgs { inherit system; }; in
+      {
+        devShells.default = pkgs.mkShell {
+          packages = [ web-browser.packages.${system}.default ];
+        };
+      });
 }
 ```
+
+Run `web-browser-sidecar` and point your MCP client at its stdio — you get
+both the upstream `fetch_url*` tools and the four `*_cached` tools in one
+server.
+
+## Composition
+
+`web-browser` replaces the built-in `WebFetch` tool. The cache means the
+agent can call `search_cached("react hooks useEffect")` instead of re-fetching
+the same page every turn, and `get_cached(url)` returns instantly without
+touching the network. The private SQLite DB is self-contained; if
+`sqlite-store` later becomes canonical, the sidecar can migrate to writing
+into its `web.*` namespace without changing tool shapes.
+
+## Disqualified alternatives
+
+- `@just-every/mcp-read-website-fast` — pure HTTP + Readability, no Chromium.
+  Lighter, but SPA docs (Stripe, Vercel, modern API references) return
+  garbage because nothing renders the JS. Playwright is the price of
+  handling the modern web.
+- Firecrawl / Tavily / Exa — paid API keys, wrong default for a flake
+  collection.
+- Microsoft `playwright-mcp` — returns verbose accessibility trees, designed
+  for browser automation, not doc reading.

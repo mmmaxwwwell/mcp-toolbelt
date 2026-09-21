@@ -41,6 +41,11 @@ TOGGLES=(
   "MCP_TOOLBELT_EDIT_SURFACE semantic-edit-mcp"
   "MCP_TOOLBELT_TEST_RUNNER mcp-test-runner"
   "MCP_TOOLBELT_SQLITE_STORE sqlite-store"
+  "MCP_TOOLBELT_DOCS_FETCHER docs-fetcher"
+  "MCP_TOOLBELT_NIX_DEV_EXEC nix-dev-exec"
+  "MCP_TOOLBELT_PNPM_WRAPPER pnpm-wrapper"
+  "MCP_TOOLBELT_FS_FALLBACK fs-fallback"
+  "MCP_TOOLBELT_GITHUB github-mcp-server"
 )
 
 FAILURES=0

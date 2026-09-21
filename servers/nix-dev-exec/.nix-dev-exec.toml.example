@@ -1,0 +1,72 @@
+# Example .nix-dev-exec.toml — copy to your project root and edit.
+# Every operation runs as: bwrap <sandbox flags> -- nix develop -c <expanded argv>
+# Templates are argv lists, NOT shell strings. Placeholders like {file} occupy
+# a single argv slot and are filled 1:1 with validated arg values.
+
+# ---------------------------------------------------------------------------
+# Sandbox — bwrap is ALWAYS on. Only the preset and per-op tweaks are tunable.
+# Presets:
+#   "dev"     network ON,  RW: project root + package caches under $HOME.  Default for normal dev work.
+#   "strict"  network OFF, RW: project root only. $HOME is a fresh tmpfs.  For lint/typecheck/offline tests.
+#   "install" network ON,  RW: project root + package caches. Same shape as "dev";
+#             use it to signal "this op mutates package caches on purpose".
+# ---------------------------------------------------------------------------
+[sandbox]
+default_preset = "dev"
+# Additional RW/RO paths added to every preset (absolute or ~/relative).
+extra_rw = []
+extra_ro = []
+
+# ---------------------------------------------------------------------------
+# Operations
+# ---------------------------------------------------------------------------
+
+[operations.test]
+description = "Run the full test suite. Use `filter` to narrow to matching tests."
+command     = "pnpm test {filter}"
+args.filter = { type = "string", default = "", validate = "^[a-zA-Z0-9_./-]*$" }
+sandbox.preset = "strict"   # tests shouldn't touch the network
+
+[operations.test_one]
+description = "Run a single test file."
+command     = "pnpm test {file}"
+args.file   = { type = "path", must_exist = true, must_match = "**/*.test.ts" }
+sandbox.preset = "strict"
+
+[operations.lint]
+description = "Lint the codebase."
+command     = "pnpm lint"
+sandbox.preset = "strict"
+
+[operations.typecheck]
+description = "Run the TypeScript type checker."
+command     = "pnpm tsc --noEmit"
+timeout     = 120
+sandbox.preset = "strict"
+
+[operations.install]
+description = "Install / update npm dependencies. Mutates ~/.npm cache."
+command     = "pnpm install"
+sandbox.preset = "install"
+
+[operations.flake_check]
+description = "Validate the flake without building."
+command     = "nix flake check --no-build"
+timeout     = 600
+# Uses the global default preset ("dev") — network on, package caches RW.
+
+# ---------------------------------------------------------------------------
+# Sandbox escape hatch. sandbox = "off" runs the op OUTSIDE any bwrap
+# confinement. Use ONLY for ops that legitimately need host access (e.g.
+# deploy scripts that must read SSH keys, ops that touch host services).
+# The value MUST literally be the string "off" — booleans / true / false are
+# rejected at load so a reviewer can grep the config unambiguously.
+#
+# Every "off" run logs a WARNING to stderr and marks the response with
+# sandbox_disabled = true. Prefer per-op RW extras (sandbox.extra_rw) before
+# reaching for this.
+# ---------------------------------------------------------------------------
+[operations.deploy]
+description = "Deploy to production. Needs SSH keys → sandbox off."
+command     = "./scripts/deploy.sh"
+sandbox     = "off"

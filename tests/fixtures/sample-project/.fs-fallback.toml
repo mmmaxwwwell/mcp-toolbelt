@@ -1,0 +1,22 @@
+# fs-fallback ACL for the sample project.
+# See servers/fs-fallback/README.md for the full grammar.
+
+[read]
+allow = ["**/*"]
+deny  = [".env", ".env.*", "secrets/**", "**/.aws/**", "**/.ssh/**", "**/id_rsa*", "**/*.pem"]
+
+[write]
+allow = ["docs/**", "*.md", "*.toml", "*.json"]
+deny  = []
+allow_source_override = []
+soft_deny = [
+  { pattern = "package.json",   hint = "editing package.json manually — did you mean pnpm-wrapper.add / .remove?" },
+  { pattern = "pnpm-lock.yaml", hint = "lockfiles are auto-managed — use pnpm-wrapper.install to regenerate" },
+]
+
+[trash]
+retention_days = 7
+
+[audit]
+log     = ".fs-fallback/audit.jsonl"
+enabled = true

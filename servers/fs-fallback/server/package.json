@@ -1,0 +1,28 @@
+{
+  "name": "fs-fallback",
+  "version": "0.1.0",
+  "description": "ACL-gated raw filesystem read/write MCP server that steers agents toward edit-surface for source code",
+  "type": "module",
+  "bin": {
+    "fs-fallback": "dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "~1.12.0",
+    "@iarna/toml": "^2.2.5",
+    "micromatch": "^4.0.5",
+    "diff": "^5.2.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/micromatch": "^4.0.9",
+    "@types/diff": "^5.2.3",
+    "typescript": "^5.7.0"
+  }
+}

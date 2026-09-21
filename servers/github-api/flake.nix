@@ -23,8 +23,7 @@
           pname = "github-mcp-server";
           inherit version src;
 
-          # Populated after the first build attempt reports the correct hash.
-          vendorHash = "sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=";
+          vendorHash = "sha256-dqn9W2gOb3ZCfppzfSczDO2bvpwsGyPe4I/h6y3JL9A=";
 
           # Upstream ships two binaries under cmd/. Only build the MCP server;
           # mcpcurl is a developer-only debugging helper.

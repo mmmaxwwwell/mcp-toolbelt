@@ -1,4 +1,4 @@
-import { runPnpm } from "./pnpm.js";
+import { runPnpm, type RunSandboxInput } from "./pnpm.js";
 
 export interface DepEntry {
   name: string;
@@ -12,12 +12,15 @@ export interface Delta {
   updated: Array<{ name: string; from: string; to: string; dev: boolean }>;
 }
 
-export async function snapshotDeps(cwd: string): Promise<DepEntry[]> {
-  const r = await runPnpm(
-    ["list", "--depth=0", "--json"],
-    cwd,
-    { timeoutMs: 60_000 }
-  );
+// Pre/post-list snapshots need to run inside the same sandbox as the main
+// invocation — the sandbox tmpfs'es $HOME, so a snapshot run outside it
+// would see a different view of the pnpm store.
+export async function snapshotDeps(
+  sandbox: RunSandboxInput
+): Promise<DepEntry[]> {
+  const r = await runPnpm(["list", "--depth=0", "--json"], sandbox, {
+    timeoutMs: 60_000,
+  });
   if (r.code !== 0 && !r.stdout) return [];
   return parsePnpmList(r.stdout);
 }

@@ -85,9 +85,17 @@ export function buildBwrapArgv(opts: BuildOpts): string[] {
 
   const argv: string[] = [];
 
-  // System roots (read-only). /nix and /etc are needed for the resolved
-  // interpreter/CA-certs/nsswitch to work.
-  argv.push("--ro-bind", "/nix", "/nix");
+  // System roots (read-only). /nix and /etc cover NixOS; /usr and /bin
+  // cover Debian/Ubuntu-style layouts (and any postinstall script that
+  // hardcodes /usr/bin/env or /bin/sh). All are -try because none of them
+  // exist universally.
+  argv.push("--ro-bind-try", "/nix", "/nix");
+  argv.push("--ro-bind-try", "/usr", "/usr");
+  argv.push("--ro-bind-try", "/bin", "/bin");
+  argv.push("--ro-bind-try", "/sbin", "/sbin");
+  argv.push("--ro-bind-try", "/lib", "/lib");
+  argv.push("--ro-bind-try", "/lib64", "/lib64");
+  argv.push("--ro-bind-try", "/run/current-system", "/run/current-system");
   argv.push("--ro-bind", "/etc", "/etc");
 
   // Virtual filesystems.

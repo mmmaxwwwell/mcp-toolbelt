@@ -1,0 +1,18 @@
+{
+  "name": "mcp-toolbelt-sample",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@9.15.0",
+  "type": "module",
+  "scripts": {
+    "test": "echo 'test-ok'",
+    "lint": "echo 'lint-ok'",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "zod": "3.23.8"
+  },
+  "devDependencies": {
+    "typescript": "5.4.5"
+  }
+}

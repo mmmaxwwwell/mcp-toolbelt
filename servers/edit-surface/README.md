@@ -23,7 +23,7 @@ code editing using tree-sitter.
 | Language | Rust (edition 2024, requires rustc 1.85+) |
 | Build system | Cargo (`Cargo.lock` present on tagged releases) |
 | Entry point | `semantic-edit-mcp` binary (from `src/main.rs`) |
-| Stdio mode | Default — no special flags needed (optional `serve` subcommand also works) |
+| Stdio mode | Default — running the bare binary with no subcommand starts the MCP stdio server |
 | MCP SDK | `mcplease 0.2.3` (lightweight MCP server crate) |
 
 ### Cargo dependencies
@@ -50,41 +50,34 @@ code editing using tree-sitter.
 
 ### MCP tools
 
-**Core editing (AST-aware):**
+v0.2.1 exposes a small stage/preview/persist workflow. All editing tools take
+an `operation` (`insert_after`, `insert_before`, or `replace`) plus an
+`anchor` — a short, distinctive text snippet that uniquely identifies the
+AST node to target.
 
 | Tool | Description |
 |---|---|
-| `replace_node` | Replace an entire AST node with new content |
-| `insert_before_node` | Insert content before a node |
-| `insert_after_node` | Insert content after a node |
-| `wrap_node` | Wrap an existing node with new syntax |
+| `preview_edit` | Stage an operation and return a diff preview of the changes (no write) |
+| `retarget_edit` | Change the anchor/operation of the currently staged edit without rewriting the content |
+| `persist_edit` | Commit the currently staged operation to disk |
+| `set_working_directory` | Set the session's working root so subsequent edits can use relative paths |
 
-**Specialized insertion (Rust-specific):**
+**Operations:**
 
-| Tool | Description |
-|---|---|
-| `insert_after_struct` | Insert after struct definitions |
-| `insert_after_enum` | Insert after enum declarations |
-| `insert_after_impl` | Insert after impl blocks |
-| `insert_after_function` | Insert after function definitions |
-| `insert_in_module` | Smart module-level positioning |
+- `insert_after` — insert content after the complete AST node containing the anchor
+- `insert_before` — insert content before the complete AST node containing the anchor
+- `replace` — replace the entire AST node that starts with the anchor text
 
-**Utility:**
+To remove code, use `replace` with empty content.
 
-| Tool | Description |
-|---|---|
-| `validate_syntax` | Check code validity (file or inline) |
-| `get_node_info` | Get AST node info at a location |
+### Anchors
 
-All operations support `preview_only: true` for dry-run mode.
+Nodes are targeted by anchor text — no line/column, no tree-sitter queries in the
+public tool surface. Guidelines from the upstream CLI help:
 
-### Node selectors
-
-Nodes can be targeted by:
-- **Position** — line and column
-- **Name + type** — e.g., struct named `Foo`
-- **Type only** — e.g., all `impl` blocks
-- **Tree-sitter query** — arbitrary pattern matching
+- Keep anchors short but unique (e.g. `fn main`, `struct User`, `import React`)
+- Anchors are whitespace-insensitive
+- If an anchor matches multiple sites, the server picks the best placement
 
 ### Environment variables
 

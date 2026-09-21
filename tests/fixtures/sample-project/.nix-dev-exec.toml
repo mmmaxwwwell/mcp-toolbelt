@@ -1,0 +1,23 @@
+# Registry of named ops for nix-dev-exec.
+# Every op runs inside `nix develop -c <cmd>` inside a bwrap sandbox.
+
+[operations.test]
+description = "Run the smoke test."
+command     = "echo test-ok"
+sandbox.preset = "strict"
+
+[operations.typecheck]
+description = "Type-check the codebase (offline)."
+command     = "echo typecheck-ok"
+sandbox.preset = "strict"
+
+[operations.lint]
+description = "Lint stub (echo)."
+command     = "echo lint-ok"
+sandbox.preset = "strict"
+
+[operations.flake_check]
+description = "Validate the flake without building."
+command     = "nix flake check --no-build"
+sandbox.preset = "strict"
+timeout     = 600
