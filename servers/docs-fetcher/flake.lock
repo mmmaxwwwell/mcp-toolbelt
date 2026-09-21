@@ -111,14 +111,20 @@
         "nixpkgs": "nixpkgs_2"
       },
       "locked": {
-        "path": "../web-browser",
-        "type": "path"
+        "dir": "servers/web-browser",
+        "lastModified": 1790014176,
+        "narHash": "sha256-wBl7IuCG39aQBptqJ+SUDws4F7QraQwN5AXfccIyWuw=",
+        "ref": "refs/heads/main",
+        "rev": "02fcf550568a473aeda2de15ee8abf41eff24e87",
+        "revCount": 31,
+        "type": "git",
+        "url": "file:///home/max/git/mcp-toolbelt"
       },
       "original": {
-        "path": "../web-browser",
-        "type": "path"
-      },
-      "parent": []
+        "dir": "servers/web-browser",
+        "type": "git",
+        "url": "file:///home/max/git/mcp-toolbelt"
+      }
     }
   },
   "root": "root",
