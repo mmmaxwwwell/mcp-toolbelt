@@ -10,14 +10,20 @@
         ]
       },
       "locked": {
-        "path": "./servers/code-graph",
-        "type": "path"
+        "dir": "servers/code-graph",
+        "lastModified": 1790014140,
+        "narHash": "sha256-Y/1qifimSZBibhYX5msmX+cDFpr1afsYXr8RTV6UDhQ=",
+        "ref": "refs/heads/main",
+        "rev": "2b4915a9844960e0b1bd8888cbefe1af0d5b2a7a",
+        "revCount": 29,
+        "type": "git",
+        "url": "file:///home/max/git/mcp-toolbelt"
       },
       "original": {
-        "path": "./servers/code-graph",
-        "type": "path"
-      },
-      "parent": []
+        "dir": "servers/code-graph",
+        "type": "git",
+        "url": "file:///home/max/git/mcp-toolbelt"
+      }
     },
     "codebase": {
       "inputs": {
@@ -29,14 +35,20 @@
         ]
       },
       "locked": {
-        "path": "./servers/codebase",
-        "type": "path"
+        "dir": "servers/codebase",
+        "lastModified": 1790014140,
+        "narHash": "sha256-Y/1qifimSZBibhYX5msmX+cDFpr1afsYXr8RTV6UDhQ=",
+        "ref": "refs/heads/main",
+        "rev": "2b4915a9844960e0b1bd8888cbefe1af0d5b2a7a",
+        "revCount": 29,
+        "type": "git",
+        "url": "file:///home/max/git/mcp-toolbelt"
       },
       "original": {
-        "path": "./servers/codebase",
-        "type": "path"
-      },
-      "parent": []
+        "dir": "servers/codebase",
+        "type": "git",
+        "url": "file:///home/max/git/mcp-toolbelt"
+      }
     },
     "docs-fetcher": {
       "inputs": {
@@ -49,14 +61,20 @@
         "web-browser": "web-browser"
       },
       "locked": {
-        "path": "./servers/docs-fetcher",
-        "type": "path"
+        "dir": "servers/docs-fetcher",
+        "lastModified": 1790014140,
+        "narHash": "sha256-Y/1qifimSZBibhYX5msmX+cDFpr1afsYXr8RTV6UDhQ=",
+        "ref": "refs/heads/main",
+        "rev": "2b4915a9844960e0b1bd8888cbefe1af0d5b2a7a",
+        "revCount": 29,
+        "type": "git",
+        "url": "file:///home/max/git/mcp-toolbelt"
       },
       "original": {
-        "path": "./servers/docs-fetcher",
-        "type": "path"
-      },
-      "parent": []
+        "dir": "servers/docs-fetcher",
+        "type": "git",
+        "url": "file:///home/max/git/mcp-toolbelt"
+      }
     },
     "edit-surface": {
       "inputs": {
@@ -68,14 +86,20 @@
         ]
       },
       "locked": {
-        "path": "./servers/edit-surface",
-        "type": "path"
+        "dir": "servers/edit-surface",
+        "lastModified": 1790014140,
+        "narHash": "sha256-Y/1qifimSZBibhYX5msmX+cDFpr1afsYXr8RTV6UDhQ=",
+        "ref": "refs/heads/main",
+        "rev": "2b4915a9844960e0b1bd8888cbefe1af0d5b2a7a",
+        "revCount": 29,
+        "type": "git",
+        "url": "file:///home/max/git/mcp-toolbelt"
       },
       "original": {
-        "path": "./servers/edit-surface",
-        "type": "path"
-      },
-      "parent": []
+        "dir": "servers/edit-surface",
+        "type": "git",
+        "url": "file:///home/max/git/mcp-toolbelt"
+      }
     },
     "flake-utils": {
       "inputs": {
@@ -123,14 +147,20 @@
         ]
       },
       "locked": {
-        "path": "./servers/fs-fallback",
-        "type": "path"
+        "dir": "servers/fs-fallback",
+        "lastModified": 1790014140,
+        "narHash": "sha256-Y/1qifimSZBibhYX5msmX+cDFpr1afsYXr8RTV6UDhQ=",
+        "ref": "refs/heads/main",
+        "rev": "2b4915a9844960e0b1bd8888cbefe1af0d5b2a7a",
+        "revCount": 29,
+        "type": "git",
+        "url": "file:///home/max/git/mcp-toolbelt"
       },
       "original": {
-        "path": "./servers/fs-fallback",
-        "type": "path"
-      },
-      "parent": []
+        "dir": "servers/fs-fallback",
+        "type": "git",
+        "url": "file:///home/max/git/mcp-toolbelt"
+      }
     },
     "git-guard": {
       "inputs": {
@@ -142,14 +172,20 @@
         ]
       },
       "locked": {
-        "path": "./servers/git-guard",
-        "type": "path"
+        "dir": "servers/git-guard",
+        "lastModified": 1790014140,
+        "narHash": "sha256-Y/1qifimSZBibhYX5msmX+cDFpr1afsYXr8RTV6UDhQ=",
+        "ref": "refs/heads/main",
+        "rev": "2b4915a9844960e0b1bd8888cbefe1af0d5b2a7a",
+        "revCount": 29,
+        "type": "git",
+        "url": "file:///home/max/git/mcp-toolbelt"
       },
       "original": {
-        "path": "./servers/git-guard",
-        "type": "path"
-      },
-      "parent": []
+        "dir": "servers/git-guard",
+        "type": "git",
+        "url": "file:///home/max/git/mcp-toolbelt"
+      }
     },
     "github-api": {
       "inputs": {
@@ -161,14 +197,20 @@
         ]
       },
       "locked": {
-        "path": "./servers/github-api",
-        "type": "path"
+        "dir": "servers/github-api",
+        "lastModified": 1790014140,
+        "narHash": "sha256-Y/1qifimSZBibhYX5msmX+cDFpr1afsYXr8RTV6UDhQ=",
+        "ref": "refs/heads/main",
+        "rev": "2b4915a9844960e0b1bd8888cbefe1af0d5b2a7a",
+        "revCount": 29,
+        "type": "git",
+        "url": "file:///home/max/git/mcp-toolbelt"
       },
       "original": {
-        "path": "./servers/github-api",
-        "type": "path"
-      },
-      "parent": []
+        "dir": "servers/github-api",
+        "type": "git",
+        "url": "file:///home/max/git/mcp-toolbelt"
+      }
     },
     "graph-edit": {
       "inputs": {
@@ -180,14 +222,20 @@
         ]
       },
       "locked": {
-        "path": "./servers/graph-edit",
-        "type": "path"
+        "dir": "servers/graph-edit",
+        "lastModified": 1790014140,
+        "narHash": "sha256-Y/1qifimSZBibhYX5msmX+cDFpr1afsYXr8RTV6UDhQ=",
+        "ref": "refs/heads/main",
+        "rev": "2b4915a9844960e0b1bd8888cbefe1af0d5b2a7a",
+        "revCount": 29,
+        "type": "git",
+        "url": "file:///home/max/git/mcp-toolbelt"
       },
       "original": {
-        "path": "./servers/graph-edit",
-        "type": "path"
-      },
-      "parent": []
+        "dir": "servers/graph-edit",
+        "type": "git",
+        "url": "file:///home/max/git/mcp-toolbelt"
+      }
     },
     "nix-dev-exec": {
       "inputs": {
@@ -199,14 +247,20 @@
         ]
       },
       "locked": {
-        "path": "./servers/nix-dev-exec",
-        "type": "path"
+        "dir": "servers/nix-dev-exec",
+        "lastModified": 1790014140,
+        "narHash": "sha256-Y/1qifimSZBibhYX5msmX+cDFpr1afsYXr8RTV6UDhQ=",
+        "ref": "refs/heads/main",
+        "rev": "2b4915a9844960e0b1bd8888cbefe1af0d5b2a7a",
+        "revCount": 29,
+        "type": "git",
+        "url": "file:///home/max/git/mcp-toolbelt"
       },
       "original": {
-        "path": "./servers/nix-dev-exec",
-        "type": "path"
-      },
-      "parent": []
+        "dir": "servers/nix-dev-exec",
+        "type": "git",
+        "url": "file:///home/max/git/mcp-toolbelt"
+      }
     },
     "nixpkgs": {
       "locked": {
@@ -250,14 +304,20 @@
         ]
       },
       "locked": {
-        "path": "./servers/pnpm-wrapper",
-        "type": "path"
+        "dir": "servers/pnpm-wrapper",
+        "lastModified": 1790014140,
+        "narHash": "sha256-Y/1qifimSZBibhYX5msmX+cDFpr1afsYXr8RTV6UDhQ=",
+        "ref": "refs/heads/main",
+        "rev": "2b4915a9844960e0b1bd8888cbefe1af0d5b2a7a",
+        "revCount": 29,
+        "type": "git",
+        "url": "file:///home/max/git/mcp-toolbelt"
       },
       "original": {
-        "path": "./servers/pnpm-wrapper",
-        "type": "path"
-      },
-      "parent": []
+        "dir": "servers/pnpm-wrapper",
+        "type": "git",
+        "url": "file:///home/max/git/mcp-toolbelt"
+      }
     },
     "root": {
       "inputs": {
@@ -290,14 +350,20 @@
         ]
       },
       "locked": {
-        "path": "./servers/sqlite-store",
-        "type": "path"
+        "dir": "servers/sqlite-store",
+        "lastModified": 1790014140,
+        "narHash": "sha256-Y/1qifimSZBibhYX5msmX+cDFpr1afsYXr8RTV6UDhQ=",
+        "ref": "refs/heads/main",
+        "rev": "2b4915a9844960e0b1bd8888cbefe1af0d5b2a7a",
+        "revCount": 29,
+        "type": "git",
+        "url": "file:///home/max/git/mcp-toolbelt"
       },
       "original": {
-        "path": "./servers/sqlite-store",
-        "type": "path"
-      },
-      "parent": []
+        "dir": "servers/sqlite-store",
+        "type": "git",
+        "url": "file:///home/max/git/mcp-toolbelt"
+      }
     },
     "systems": {
       "locked": {
@@ -339,14 +405,20 @@
         ]
       },
       "locked": {
-        "path": "./servers/task-runner",
-        "type": "path"
+        "dir": "servers/task-runner",
+        "lastModified": 1790014140,
+        "narHash": "sha256-Y/1qifimSZBibhYX5msmX+cDFpr1afsYXr8RTV6UDhQ=",
+        "ref": "refs/heads/main",
+        "rev": "2b4915a9844960e0b1bd8888cbefe1af0d5b2a7a",
+        "revCount": 29,
+        "type": "git",
+        "url": "file:///home/max/git/mcp-toolbelt"
       },
       "original": {
-        "path": "./servers/task-runner",
-        "type": "path"
-      },
-      "parent": []
+        "dir": "servers/task-runner",
+        "type": "git",
+        "url": "file:///home/max/git/mcp-toolbelt"
+      }
     },
     "test-runner": {
       "inputs": {
@@ -358,14 +430,20 @@
         ]
       },
       "locked": {
-        "path": "./servers/test-runner",
-        "type": "path"
+        "dir": "servers/test-runner",
+        "lastModified": 1790014140,
+        "narHash": "sha256-Y/1qifimSZBibhYX5msmX+cDFpr1afsYXr8RTV6UDhQ=",
+        "ref": "refs/heads/main",
+        "rev": "2b4915a9844960e0b1bd8888cbefe1af0d5b2a7a",
+        "revCount": 29,
+        "type": "git",
+        "url": "file:///home/max/git/mcp-toolbelt"
       },
       "original": {
-        "path": "./servers/test-runner",
-        "type": "path"
-      },
-      "parent": []
+        "dir": "servers/test-runner",
+        "type": "git",
+        "url": "file:///home/max/git/mcp-toolbelt"
+      }
     },
     "web-browser": {
       "inputs": {
@@ -394,14 +472,20 @@
         ]
       },
       "locked": {
-        "path": "./servers/web-browser",
-        "type": "path"
+        "dir": "servers/web-browser",
+        "lastModified": 1790014140,
+        "narHash": "sha256-Y/1qifimSZBibhYX5msmX+cDFpr1afsYXr8RTV6UDhQ=",
+        "ref": "refs/heads/main",
+        "rev": "2b4915a9844960e0b1bd8888cbefe1af0d5b2a7a",
+        "revCount": 29,
+        "type": "git",
+        "url": "file:///home/max/git/mcp-toolbelt"
       },
       "original": {
-        "path": "./servers/web-browser",
-        "type": "path"
-      },
-      "parent": []
+        "dir": "servers/web-browser",
+        "type": "git",
+        "url": "file:///home/max/git/mcp-toolbelt"
+      }
     },
     "web-search": {
       "inputs": {
@@ -413,14 +497,20 @@
         ]
       },
       "locked": {
-        "path": "./servers/web-search",
-        "type": "path"
+        "dir": "servers/web-search",
+        "lastModified": 1790014140,
+        "narHash": "sha256-Y/1qifimSZBibhYX5msmX+cDFpr1afsYXr8RTV6UDhQ=",
+        "ref": "refs/heads/main",
+        "rev": "2b4915a9844960e0b1bd8888cbefe1af0d5b2a7a",
+        "revCount": 29,
+        "type": "git",
+        "url": "file:///home/max/git/mcp-toolbelt"
       },
       "original": {
-        "path": "./servers/web-search",
-        "type": "path"
-      },
-      "parent": []
+        "dir": "servers/web-search",
+        "type": "git",
+        "url": "file:///home/max/git/mcp-toolbelt"
+      }
     }
   },
   "root": "root",
