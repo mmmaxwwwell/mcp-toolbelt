@@ -5,66 +5,79 @@
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     flake-utils.url = "github:numtide/flake-utils";
 
-    # Each server is itself a flake under ./servers/<name>. Pulling them in as
-    # path inputs keeps versioning local (one flake.lock per server) while
-    # still letting the root flake compose them.
-    code-graph.url = "path:./servers/code-graph";
+    # Each server is itself a flake under ./servers/<name>, composed here so
+    # the root flake can re-export all of them.
+    #
+    # These were `path:./servers/<name>`, and that spelling CANNOT be consumed
+    # transitively. A relative path input locks as the literal string
+    # "path:./servers/<name>", which is resolved against whatever flake is the
+    # ROOT of the evaluation — not against this one. So the moment a consumer
+    # is itself consumed as an input (homelab -> claude-runner -> here, which
+    # is exactly what colmena does when it copies the hive), Nix looks for
+    # <root>/servers/<name>/flake.nix and fails.
+    #
+    # `?dir=` on an absolute URL is root-independent, so it survives nesting.
+    #
+    # COST: this flake now names its own repository, so a change to a server
+    # takes two commits — one for the change, one to relock the self-reference
+    # onto it. At the GitHub cutover this URL has to move with the repo.
+        code-graph.url = "git+file:///home/max/git/mcp-toolbelt?dir=servers/code-graph";
     code-graph.inputs.nixpkgs.follows = "nixpkgs";
     code-graph.inputs.flake-utils.follows = "flake-utils";
 
-    git-guard.url = "path:./servers/git-guard";
+    git-guard.url = "git+file:///home/max/git/mcp-toolbelt?dir=servers/git-guard";
     git-guard.inputs.nixpkgs.follows = "nixpkgs";
     git-guard.inputs.flake-utils.follows = "flake-utils";
 
-    codebase.url = "path:./servers/codebase";
+    codebase.url = "git+file:///home/max/git/mcp-toolbelt?dir=servers/codebase";
     codebase.inputs.nixpkgs.follows = "nixpkgs";
     codebase.inputs.flake-utils.follows = "flake-utils";
 
-    web-browser.url = "path:./servers/web-browser";
+    web-browser.url = "git+file:///home/max/git/mcp-toolbelt?dir=servers/web-browser";
     web-browser.inputs.nixpkgs.follows = "nixpkgs";
     web-browser.inputs.flake-utils.follows = "flake-utils";
 
-    web-search.url = "path:./servers/web-search";
+    web-search.url = "git+file:///home/max/git/mcp-toolbelt?dir=servers/web-search";
     web-search.inputs.nixpkgs.follows = "nixpkgs";
     web-search.inputs.flake-utils.follows = "flake-utils";
 
-    task-runner.url = "path:./servers/task-runner";
+    task-runner.url = "git+file:///home/max/git/mcp-toolbelt?dir=servers/task-runner";
     task-runner.inputs.nixpkgs.follows = "nixpkgs";
     task-runner.inputs.flake-utils.follows = "flake-utils";
 
-    test-runner.url = "path:./servers/test-runner";
+    test-runner.url = "git+file:///home/max/git/mcp-toolbelt?dir=servers/test-runner";
     test-runner.inputs.nixpkgs.follows = "nixpkgs";
     test-runner.inputs.flake-utils.follows = "flake-utils";
 
-    edit-surface.url = "path:./servers/edit-surface";
+    edit-surface.url = "git+file:///home/max/git/mcp-toolbelt?dir=servers/edit-surface";
     edit-surface.inputs.nixpkgs.follows = "nixpkgs";
     edit-surface.inputs.flake-utils.follows = "flake-utils";
 
-    sqlite-store.url = "path:./servers/sqlite-store";
+    sqlite-store.url = "git+file:///home/max/git/mcp-toolbelt?dir=servers/sqlite-store";
     sqlite-store.inputs.nixpkgs.follows = "nixpkgs";
     sqlite-store.inputs.flake-utils.follows = "flake-utils";
 
-    docs-fetcher.url = "path:./servers/docs-fetcher";
+    docs-fetcher.url = "git+file:///home/max/git/mcp-toolbelt?dir=servers/docs-fetcher";
     docs-fetcher.inputs.nixpkgs.follows = "nixpkgs";
     docs-fetcher.inputs.flake-utils.follows = "flake-utils";
 
-    nix-dev-exec.url = "path:./servers/nix-dev-exec";
+    nix-dev-exec.url = "git+file:///home/max/git/mcp-toolbelt?dir=servers/nix-dev-exec";
     nix-dev-exec.inputs.nixpkgs.follows = "nixpkgs";
     nix-dev-exec.inputs.flake-utils.follows = "flake-utils";
 
-    pnpm-wrapper.url = "path:./servers/pnpm-wrapper";
+    pnpm-wrapper.url = "git+file:///home/max/git/mcp-toolbelt?dir=servers/pnpm-wrapper";
     pnpm-wrapper.inputs.nixpkgs.follows = "nixpkgs";
     pnpm-wrapper.inputs.flake-utils.follows = "flake-utils";
 
-    fs-fallback.url = "path:./servers/fs-fallback";
+    fs-fallback.url = "git+file:///home/max/git/mcp-toolbelt?dir=servers/fs-fallback";
     fs-fallback.inputs.nixpkgs.follows = "nixpkgs";
     fs-fallback.inputs.flake-utils.follows = "flake-utils";
 
-    github-api.url = "path:./servers/github-api";
+    github-api.url = "git+file:///home/max/git/mcp-toolbelt?dir=servers/github-api";
     github-api.inputs.nixpkgs.follows = "nixpkgs";
     github-api.inputs.flake-utils.follows = "flake-utils";
 
-    graph-edit.url = "path:./servers/graph-edit";
+    graph-edit.url = "git+file:///home/max/git/mcp-toolbelt?dir=servers/graph-edit";
     graph-edit.inputs.nixpkgs.follows = "nixpkgs";
     graph-edit.inputs.flake-utils.follows = "flake-utils";
 
