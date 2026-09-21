@@ -4,7 +4,13 @@
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     flake-utils.url = "github:numtide/flake-utils";
-    web-browser.url = "path:../web-browser";
+    # Sibling server. NOT "path:../web-browser": a relative input is resolved
+    # against the root flake of the evaluation, and once this flake is fetched
+    # by ?dir= it has no parent directory to walk up into — the path escapes
+    # the store root and Nix reports /nix/store/web-browser/flake.nix. The
+    # absolute ?dir= form is root-independent. See the root flake for the
+    # full rationale.
+    web-browser.url = "git+file:///home/max/git/mcp-toolbelt?dir=servers/web-browser";
   };
 
   outputs = { self, nixpkgs, flake-utils, web-browser }:
