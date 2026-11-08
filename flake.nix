@@ -81,10 +81,11 @@
     graph-edit.inputs.nixpkgs.follows = "nixpkgs";
     graph-edit.inputs.flake-utils.follows = "flake-utils";
 
-    # nix-mcp-proxy is still under construction (spec-kit phase 6 — tasks
-    # generated, not implemented). When it ships a buildable package the
-    # passthrough server under ./servers/nix-mcp-proxy will start re-exporting
-    # it; until then the slot just carries documentation.
+    # nix-mcp-proxy's core is implemented upstream (~/git/nix-mcp-proxy main,
+    # unpushed), with a credential-injection + HTTP-upstream branch in
+    # ~/git/nix-mcp-proxy-broker (broker-secrets, also unpushed). This slot
+    # still has no flake.nix of its own — see servers/nix-mcp-proxy/README.md
+    # for what's left before this input can point at a real package.
     # nix-mcp-proxy.url = "github:mmmaxwwwell/nix-mcp-proxy";
   };
 

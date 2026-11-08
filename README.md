@@ -28,7 +28,7 @@ with all servers configured.
 | `Read`, `Glob`, `Grep` | **[code-graph](servers/code-graph/)** | Persistent incremental knowledge graph. The agent navigates symbols, not files. Wraps [tirth8205/code-review-graph](https://github.com/tirth8205/code-review-graph). |
 | `WebFetch` | **[web-browser](servers/web-browser/)** | Sidecar around [jae-jae/fetcher-mcp](https://github.com/jae-jae/fetcher-mcp): Playwright + Readability + Turndown for full JS rendering, with every extracted page written to a user-global SQLite FTS5 index at `~/.cache/mcp-toolbelt/web-cache.db`. Adds `search_cached`, `get_cached`, `list_cached`, `purge_cached` on top of the upstream fetch tool. |
 | `WebSearch` | **[web-search](servers/web-search/)** | DuckDuckGo-backed search, no API key required. Wraps [pskill9/web-search](https://github.com/pskill9/web-search). Tavily/Exa are documented opt-in upgrades for users who bring a key. |
-| *(all servers)* | **[nix-mcp-proxy](servers/nix-mcp-proxy/)** | Tool/path/field whitelisting, rate limiting, audit logging. Every wrapper sits behind it. |
+| *(none yet)* | **[nix-mcp-proxy](servers/nix-mcp-proxy/)** | Tool/path/field whitelisting + validation, implemented upstream; no wrapper sits behind it yet. Audit logging and rate limiting are not built (would be custom middleware on top of the built-in error-mapping/size-limit/validation). |
 | *(versioned docs)* | **[docs-fetcher](servers/docs-fetcher/)** | Downloads docs pinned to each dependency's resolved version. Stops the agent from inventing APIs based on training-data versions. |
 
 ## Server catalog
@@ -37,7 +37,7 @@ with all servers configured.
 |--------|--------|------|
 | [`code-graph`](servers/code-graph/) | working | Persistent knowledge graph of your codebase |
 | [`codebase`](servers/codebase/) | packaged | Tree-sitter-based code intelligence via [tree-sitter-mcp](https://github.com/nicobailon/tree-sitter-mcp) |
-| [`nix-mcp-proxy`](servers/nix-mcp-proxy/) | in development | Proxy middleware for all servers |
+| [`nix-mcp-proxy`](servers/nix-mcp-proxy/) | implemented upstream, not packaged here | Sealed allowlist/validator proxy (`mkProxy`); `broker-secrets` branch adds `${SECRET:}` credential injection + streamable-HTTP upstreams. No slot `flake.nix` yet |
 | [`edit-surface`](servers/edit-surface/) | packaged | Anchor-based code editing with tree-sitter validation via [jbr/semantic-edit-mcp](https://github.com/jbr/semantic-edit-mcp) |
 | [`graph-edit`](servers/graph-edit/) | packaged | AST-first source-code editing via ts-morph. Symbols not files. Stateful session + policy-driven serialization per `.graph-edit.toml`. TypeScript v1; Python (`libcst`) + Rust (`syn` + rust-analyzer) planned |
 | [`fs-fallback`](servers/fs-fallback/) | packaged | ACL-gated raw read/write for non-code files; soft-delete trash, audit log, `edit-surface` refusal hints |
